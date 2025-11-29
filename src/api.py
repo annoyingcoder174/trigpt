@@ -1,11 +1,29 @@
 # src/api.py
 
+from __future__ import annotations
+
 from pathlib import Path
-from typing import List
+from typing import List, Optional, Dict, Any
+import io
+import time
+import json
+
+import cv2
+import numpy as np
 
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form
 from pydantic import BaseModel
+
+from PIL import Image
+
+# Optional HEIC/HEIF support (requires pillow-heif to be installed)
+try:
+    import pillow_heif
+    pillow_heif.register_heif_opener()
+    print("HEIC/HEIF support enabled in api.py.")
+except ImportError:
+    print("pillow-heif not installed; HEIC/HEIF images may not work in image endpoints.")
 
 from .llm_client import LLMClient
 from .doc_ingestion import load_pdf_text, load_pdf_text_from_bytes, chunk_text
@@ -15,19 +33,20 @@ from .s3_storage import upload_pdf_bytes
 from .question_classifier import QuestionTypeClassifier
 from .reranker import Reranker
 from .emotion_model import EmotionClassifier
-from typing import List
-
 from .object_detector import ObjectDetector
+from .identity_db import IDENTITY_DB, get_identity_summary, render_profile_details
+from .irene_style_examples import STYLE_EXAMPLES
 
 
-app = FastAPI(title="TriGPT API", version="0.1.0")
+app = FastAPI(title="TriGPT API", version="0.2.0")
 
 llm_client = LLMClient()
+
 # ----- CORS (allow frontend to call this API) -----
 origins = [
     "http://localhost",
     "http://127.0.0.1",
-    "http://localhost:5173",   # Vite dev server (for future React UI)
+    "http://localhost:5173",   # Vite dev server
     "http://127.0.0.1:5173",
 ]
 
@@ -39,35 +58,46 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Try to load face classifier at startup
+# ---------- Identity summaries ----------
+
+IDENTITY_INFO: Dict[str, Optional[str]] = {
+    label: get_identity_summary(label)
+    for label in IDENTITY_DB.keys()
+}
+
+# Feedback logs
+FEEDBACK_FILE = Path("data/chat_feedback.jsonl")
+
+# ---------- Model loading ----------
+
 try:
     face_classifier = FaceClassifier(checkpoint_path="models/face_classifier.pt")
     print("✅ Face classifier loaded for API.")
 except FileNotFoundError:
     face_classifier = None
-    print("⚠️ Face classifier checkpoint not found. /predict_face and /secure_ask will be limited.")
+    print("⚠️ Face classifier checkpoint not found. /predict_face, /secure_ask and identity features limited.")
 
-# Try to load question-type classifier at startup
 try:
     question_classifier = QuestionTypeClassifier(model_dir="models/question_classifier")
     print("✅ Question-type classifier loaded for API.")
 except FileNotFoundError:
     question_classifier = None
     print("⚠️ Question-type classifier not found. Intent detection disabled.")
-# Try to load RAG reranker at startup
+
 try:
     reranker = Reranker()
     print("✅ Reranker loaded for API.")
 except Exception as e:
     reranker = None
     print(f"⚠️ Reranker not available: {e}")
-# Try to load emotion classifier at startup
+
 try:
     emotion_classifier = EmotionClassifier(checkpoint_path="models/emotion_classifier.pt")
     print("✅ Emotion classifier loaded for API.")
 except FileNotFoundError:
     emotion_classifier = None
-    print("⚠️ Emotion classifier checkpoint not found. /predict_emotion will be disabled.")
+    print("⚠️ Emotion classifier checkpoint not found. /live_emotion and emotion in /vision_qa limited.")
+
 try:
     object_detector = ObjectDetector(score_thresh=0.7)
     print("✅ Object detector loaded for API (score_thresh=0.7).")
@@ -76,9 +106,7 @@ except Exception as e:
     print(f"⚠️ Object detector not available: {e}")
 
 
-
-
-# ---------- Models ----------
+# ---------- Pydantic Models ----------
 
 class IngestRequest(BaseModel):
     pdf_path: str
@@ -113,14 +141,17 @@ class SecureAskResponse(BaseModel):
     emotion: str | None = None
     emotion_confidence: float | None = None
 
+
 class DocumentInfo(BaseModel):
     doc_id: str
     source: str
     num_chunks: int
 
+
 class EmotionPredictionResponse(BaseModel):
     emotion: str
-    confidence: float 
+    confidence: float
+
 
 class VisionQAResponse(BaseModel):
     answer: str
@@ -128,27 +159,69 @@ class VisionQAResponse(BaseModel):
     identity_confidence: float | None = None
     emotion: str | None = None
     emotion_confidence: float | None = None
+
+
 class ChatRequest(BaseModel):
     question: str
+
+
 class ChatResponse(BaseModel):
     answer: str
+
+
 class DetectionBox(BaseModel):
+    # High-level category for the object
+    # ex: "human", "car", "dog", "cat", "tree", "phone"
     label: str
+
+    # Raw detector label from the underlying model (e.g. "person", "cell phone")
+    raw_label: str | None = None
+
     score: float
     x: float  # 0-1, left
     y: float  # 0-1, top
     w: float  # 0-1, width
     h: float  # 0-1, height
 
+    # Only filled when label == "human" AND face_classifier is available
+    identity: str | None = None           # PTri, Lanh, MTuan, BHa, PTri's Muse, strangers
+    identity_confidence: float | None = None
+
+    # Short info string from IDENTITY_INFO
+    identity_info: str | None = None
+
 
 class DetectionResponse(BaseModel):
     detections: List[DetectionBox]
 
 
-
+class ChatFeedbackRequest(BaseModel):
+    question: str
+    answer: str
+    rating: int              # 1–5
+    comment: str | None = None
+    mode: str | None = None  # "doc", "global", "general", "vision"
 
 
 # ---------- Helpers ----------
+
+def is_image_upload(file: UploadFile) -> bool:
+    """
+    Accept standard image MIME types and common extensions,
+    including HEIC/HEIF.
+    """
+    ct = (file.content_type or "").lower()
+    name = (file.filename or "").lower()
+
+    if ct.startswith("image/"):
+        return True
+
+    # Fallback by extension (for browsers that send octet-stream)
+    if name.endswith((".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif")):
+        return True
+
+    return False
+
 
 def build_context_from_query(
     question: str,
@@ -160,23 +233,19 @@ def build_context_from_query(
     If doc_id is provided, search only within that document.
     If reranker is available, rerank the retrieved chunks.
     """
-    # Ask Chroma for a bit more than top_k so the reranker has options
     result = query_document(question, n_results=top_k * 2, doc_id=doc_id)
 
     docs = result.get("documents", [[]])[0]
     metas = result.get("metadatas", [[]])[0]
 
     if not docs:
-        # no relevant chunks found
         return "NO_RELEVANT_CONTEXT_FOUND", []
 
-    # --- Rerank if model is available ---
     if reranker is not None and len(docs) > 1:
         indices, scores = reranker.rerank(question, docs, top_k=top_k)
         docs = [docs[i] for i in indices]
         metas = [metas[i] for i in indices]
     else:
-        # If no reranker, just use the first top_k from vector search
         docs = docs[:top_k]
         metas = metas[:top_k]
 
@@ -191,7 +260,6 @@ def build_context_from_query(
         sources.append(tag)
 
     return "\n\n".join(context_parts), sources
-
 
 
 def ingest_pdf_from_path(pdf_path: Path):
@@ -218,6 +286,61 @@ def ingest_pdf_from_path(pdf_path: Path):
     return doc_id, len(chunks)
 
 
+def looks_vietnamese(text: str) -> bool:
+    """
+    Very rough check if text is likely Vietnamese.
+    Not perfect, just to pick style examples.
+    """
+    if not text:
+        return False
+    t = text.lower()
+    vi_markers = [
+        " không", " ko ", " là ", "của ", "nhé", "nh nha", " nha", " ạ",
+        "và", "được", "mình", "cậu", "tớ", "anh ", "chị ", "em ", "ơi",
+    ]
+    return any(m in t for m in vi_markers) or "đ" in t
+
+
+def select_style_examples(
+    identity_label: str | None,
+    question: str,
+    max_examples: int = 4,
+):
+    """
+    Choose a few style examples based on:
+    - user language (English vs Vietnamese)
+    - identity label if available (PTri, Muse, etc.)
+    """
+    lang = "vi" if looks_vietnamese(question) else "en"
+    examples_all = STYLE_EXAMPLES.get(lang, [])
+    if not examples_all:
+        return lang, []
+
+    label_examples = []
+    other_examples = []
+
+    for ex in examples_all:
+        ex_label = ex.get("label")
+        if identity_label is not None and ex_label == identity_label:
+            label_examples.append(ex)
+        else:
+            other_examples.append(ex)
+
+    selected: list[Dict[str, Any]] = []
+
+    for ex in label_examples:
+        if len(selected) >= max_examples:
+            break
+        selected.append(ex)
+
+    for ex in other_examples:
+        if len(selected) >= max_examples:
+            break
+        selected.append(ex)
+
+    return lang, selected
+
+
 def build_system_prompt(
     context: str,
     intent: str | None,
@@ -225,11 +348,17 @@ def build_system_prompt(
 ) -> str:
     """
     Build a system prompt for IreneAdler based on detected intent and (optionally) emotion.
+    Used for /ask and /secure_ask (document Q&A).
     """
     base = (
         "You are an AI assistant named IreneAdler. "
         "Use the provided context to answer the question as clearly as possible. "
-        "If the answer is clearly not in the context, say you don't know."
+        "If the answer is clearly not in the context, say you don't know.\n\n"
+        "Language rules:\n"
+        "- Detect the user's language from their message.\n"
+        "- If the user writes in Vietnamese, reply in natural, fluent Vietnamese "
+        "(nhẹ nhàng, gần gũi nhưng vẫn rõ ràng, không quá formal).\n"
+        "- Otherwise, reply in the same language the user used.\n"
     )
 
     if intent == "summary":
@@ -256,7 +385,6 @@ def build_system_prompt(
     else:
         style = "Answer in a clear, structured, and helpful way."
 
-    # Emotion-based tweak
     emotion_note = ""
     if emotion in {"sad", "tired"}:
         emotion_note = (
@@ -284,6 +412,7 @@ def build_system_prompt(
         f"Context:\n{context}"
     )
 
+
 # ---------- Routes ----------
 
 @app.get("/")
@@ -299,6 +428,7 @@ def get_documents():
     docs = list_documents()
     return [DocumentInfo(**d) for d in docs]
 
+
 @app.get("/health")
 def health():
     return {
@@ -307,8 +437,8 @@ def health():
         "question_classifier": question_classifier is not None,
         "emotion_classifier": emotion_classifier is not None if 'emotion_classifier' in globals() else False,
         "reranker": reranker is not None if 'reranker' in globals() else False,
+        "object_detector": object_detector is not None if 'object_detector' in globals() else False,
     }
-
 
 
 @app.post("/ingest_pdf")
@@ -336,13 +466,10 @@ async def upload_pdf(file: UploadFile = File(...)):
 
     filename = file.filename or "uploaded.pdf"
 
-    # Read file bytes once
     contents = await file.read()
 
-    # 1) Upload to S3
     doc_id, s3_key = upload_pdf_bytes(contents, filename)
 
-    # 2) Extract text from bytes and index into Chroma
     full_text = load_pdf_text_from_bytes(contents)
     chunks = chunk_text(full_text, chunk_size=800, overlap=200)
 
@@ -369,13 +496,14 @@ async def upload_pdf(file: UploadFile = File(...)):
 
 @app.post("/ask", response_model=AnswerResponse)
 def ask_question(body: QuestionRequest):
-    # 1 detect intent (if classifier is available)
+    """
+    Main document Q&A endpoint with intent detection and reranking.
+    """
     intent_label: str | None = None
     intent_conf: float | None = None
     if question_classifier is not None:
         intent_label, intent_conf = question_classifier.classify(body.question)
 
-    # 2 retrieve context
     context, sources = build_context_from_query(
         body.question,
         top_k=body.top_k,
@@ -390,7 +518,6 @@ def ask_question(body: QuestionRequest):
             intent_confidence=intent_conf,
         )
 
-    # 3 build prompt based on intent
     system_prompt = build_system_prompt(context, intent_label, emotion=None)
 
     messages = [
@@ -414,7 +541,8 @@ def ask_question(body: QuestionRequest):
 @app.post("/predict_face", response_model=FacePredictionResponse)
 async def predict_face(file: UploadFile = File(...)):
     """
-    Predict 'me' vs 'other' from an uploaded image.
+    Predict identity class (PTri / Lanh / MTuan / BHa / PTri's Muse / strangers)
+    from an uploaded face image.
     """
     if face_classifier is None:
         raise HTTPException(
@@ -422,7 +550,7 @@ async def predict_face(file: UploadFile = File(...)):
             detail="Face classifier not available. Train the model first."
         )
 
-    if not file.content_type.startswith("image/"):
+    if not is_image_upload(file):
         raise HTTPException(status_code=400, detail="Uploaded file is not an image")
 
     try:
@@ -444,11 +572,10 @@ async def secure_ask(
     file: UploadFile = File(...),
 ):
     """
-    Vision-gated question answering:
-    - Uses the face classifier to check identity.
-    - Uses the emotion classifier to detect basic emotion.
-    - Only runs RAG if the face is recognized as 'me' with enough confidence.
-    - Adapts Irene's tone based on detected emotion + intent.
+    Vision-gated question answering.
+
+    Treats 'PTri' as the owner. Only answers if the face classifier
+    sees PTri with enough confidence.
     """
     if face_classifier is None:
         raise HTTPException(
@@ -456,32 +583,28 @@ async def secure_ask(
             detail="Face classifier not available. Train the model first."
         )
 
-    if not file.content_type.startswith("image/"):
+    if not is_image_upload(file):
         raise HTTPException(status_code=400, detail="Uploaded file is not an image")
 
     try:
         image_bytes = await file.read()
-        # 1) face identity
         identity, conf = face_classifier.predict_from_bytes(image_bytes)
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Error processing image: {e}")
 
-    # 2) optional emotion
     emotion_label: str | None = None
     emotion_conf: float | None = None
     if "emotion_classifier" in globals() and emotion_classifier is not None:
         try:
             emotion_label, emotion_conf = emotion_classifier.predict_from_bytes(image_bytes)
         except Exception:
-            # don't break secure_ask if emotion model fails
             emotion_label, emotion_conf = None, None
 
-    # 3) Threshold & identity check
     threshold = 0.7
-    if identity != "me" or conf < threshold:
+    if identity != "PTri" or conf < threshold:
         msg = (
             f"Access denied. I see '{identity}' with confidence {conf:.2f}, "
-            f"but I only answer when I'm confident it's 'me'."
+            f"but I only answer when I'm confident it's PTri."
         )
         return SecureAskResponse(
             allowed=False,
@@ -495,13 +618,11 @@ async def secure_ask(
             emotion_confidence=emotion_conf,
         )
 
-    # 4) Authorized → detect intent
     intent_label: str | None = None
     intent_conf: float | None = None
     if question_classifier is not None:
         intent_label, intent_conf = question_classifier.classify(question)
 
-    # 5) Do normal RAG (optionally scoped to a doc_id)
     context, sources = build_context_from_query(
         question,
         top_k=5,
@@ -521,7 +642,6 @@ async def secure_ask(
             emotion_confidence=emotion_conf,
         )
 
-    # 6) Build system prompt with intent + emotion
     system_prompt = build_system_prompt(
         context=context,
         intent=intent_label,
@@ -549,18 +669,22 @@ async def secure_ask(
         emotion=emotion_label,
         emotion_confidence=emotion_conf,
     )
+
+
 @app.post("/vision_qa", response_model=VisionQAResponse)
 async def vision_qa(
     question: str = Form("Describe the person and their emotion."),
     file: UploadFile = File(...),
 ):
     """
-    Vision Q&A without access control:
-    - Uses face + emotion classifiers on the uploaded image.
-    - Passes those detections to IreneAdler.
-    - Irene must NOT identify real-world people by name.
+    Vision Q&A without access control.
+
+    Irene will:
+    - Use identity_db profile as factual context.
+    - Use style examples (EN or VI) as a guide for human-like tone.
+    - Not just copy raw fields; instead talk like a close friend.
     """
-    if not file.content_type.startswith("image/"):
+    if not is_image_upload(file):
         raise HTTPException(status_code=400, detail="Uploaded file is not an image")
 
     try:
@@ -568,7 +692,6 @@ async def vision_qa(
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Error reading image: {e}")
 
-    # Optional: face identity label (e.g., 'me' / 'other')
     identity_label: str | None = None
     identity_conf: float | None = None
     if "face_classifier" in globals() and face_classifier is not None:
@@ -577,7 +700,6 @@ async def vision_qa(
         except Exception:
             identity_label, identity_conf = None, None
 
-    # Optional: emotion
     emotion_label: str | None = None
     emotion_conf: float | None = None
     if "emotion_classifier" in globals() and emotion_classifier is not None:
@@ -586,32 +708,63 @@ async def vision_qa(
         except Exception:
             emotion_label, emotion_conf = None, None
 
-    # Build a context string for Irene
-    detection_lines = []
+    # Build factual context from identity_db + detectors
+    detection_lines: list[str] = []
+
     if identity_label is not None:
         detection_lines.append(
             f"Detected identity label (from a local classifier): {identity_label} "
             f"(confidence {identity_conf:.2f} if available). "
-            "This is NOT a real-world identity; just a label like 'me' or 'other'."
+            "This is NOT a real-world identity; just a local tag."
         )
+        details = render_profile_details(identity_label)
+        if details:
+            detection_lines.append(
+                "Structured profile (facts only, not how you must phrase it):\n" + details
+            )
+
     if emotion_label is not None:
         detection_lines.append(
             f"Detected facial emotion: {emotion_label} "
             f"(confidence {emotion_conf:.2f} if available)."
         )
 
-    context = "\n".join(detection_lines) if detection_lines else "No detections available."
+    factual_context = "\n".join(detection_lines) if detection_lines else "No detections available."
+
+    # Select style examples based on language + identity
+    lang_code, style_examples = select_style_examples(identity_label, question, max_examples=4)
+
+    examples_text_parts: list[str] = []
+    if style_examples:
+        examples_text_parts.append(
+            "Here are a few example conversations showing the TONE and STYLE you should follow.\n"
+            "Important: Use them as a style reference, but do NOT copy them word for word."
+        )
+        for ex in style_examples:
+            u = (ex.get("user") or "").strip()
+            a = (ex.get("assistant") or "").strip()
+            if not u or not a:
+                continue
+            examples_text_parts.append(f"User: {u}\nAssistant: {a}\n")
+
+    examples_text = "\n\n".join(examples_text_parts) if examples_text_parts else ""
 
     system_prompt = (
         "You are an AI assistant named IreneAdler answering questions about a single image.\n\n"
-        "You will be given some detector outputs (a simple identity label and an emotion label). "
-        "These labels are only local tags like 'me' or 'other' and generic emotion names.\n\n"
-        "IMPORTANT:\n"
-        "- You must NOT try to guess or state the real-world identity, real name, or personal details "
-        "of anyone in the image.\n"
-        "- If the user asks 'who is this?' or for a name, say you cannot identify the person.\n"
-        "- You MAY talk about general appearance, expressions, and emotions.\n\n"
-        f"Detections:\n{context}\n"
+        "You will be given:\n"
+        "1) Detector outputs (identity label, emotion).\n"
+        "2) A structured profile for that identity from the user's private database.\n"
+        "3) A few example Q&A pairs that show the desired tone and style.\n\n"
+        "Your job:\n"
+        "- Use the structured profile as factual context (birthday, hobbies, university, achievements, memories, etc.).\n"
+        "- Answer in a natural, human-like way, similar in tone to the examples.\n"
+        "- Do NOT simply list the raw fields or copy the profile lines.\n"
+        "- Do NOT copy the example answers word-for-word.\n"
+        "- Instead, write your own paragraph(s) that feel like a close friend describing this person.\n"
+        "- If the user writes in Vietnamese, answer in natural Vietnamese. Otherwise, answer in the user's language.\n"
+        "- Do NOT invent facts that are not in the profile.\n\n"
+        f"Factual context:\n{factual_context}\n\n"
+        f"Style examples (language code: {lang_code}):\n{examples_text}\n"
     )
 
     messages = [
@@ -631,22 +784,39 @@ async def vision_qa(
         emotion=emotion_label,
         emotion_confidence=emotion_conf,
     )
+
+
 @app.post("/chat", response_model=ChatResponse)
 def general_chat(body: ChatRequest):
     """
     General knowledge chat with IreneAdler.
-    Does NOT use documents or RAG, just the base LLM.
+    Uses style examples (label=None) to keep a consistent tone.
     """
+    question = body.question
+
+    lang_code = "vi" if looks_vietnamese(question) else "en"
+    all_ex = STYLE_EXAMPLES.get(lang_code, [])
+    general_ex = [e for e in all_ex if e.get("label") is None][:2]
+
     system_prompt = (
         "You are an AI assistant named IreneAdler. "
-        "Answer general questions using your world knowledge. "
-        "You are not limited to any uploaded documents. "
-        "If you genuinely don't know something or it may be outdated, say that honestly."
+        "Answer general questions using your world knowledge.\n\n"
+        "Language rules:\n"
+        "- If the user writes in Vietnamese, reply in natural, fluent Vietnamese.\n"
+        "- Otherwise, reply in the same language the user used.\n\n"
+        "Below are a few example answers that show the style you should follow. "
+        "Use them as a style reference only; do NOT copy them word for word.\n\n"
     )
 
+    examples_block = ""
+    for ex in general_ex:
+        u = ex.get("user", "")
+        a = ex.get("assistant", "")
+        examples_block += f"User: {u}\nAssistant: {a}\n\n"
+
     messages = [
-        {"role": "system", "content": system_prompt},
-        {"role": "user", "content": body.question},
+        {"role": "system", "content": system_prompt + examples_block},
+        {"role": "user", "content": question},
     ]
 
     try:
@@ -655,6 +825,8 @@ def general_chat(body: ChatRequest):
         raise HTTPException(status_code=500, detail=f"LLM error: {e}")
 
     return ChatResponse(answer=answer)
+
+
 @app.post("/live_emotion", response_model=EmotionPredictionResponse)
 async def live_emotion(file: UploadFile = File(...)):
     """
@@ -667,7 +839,7 @@ async def live_emotion(file: UploadFile = File(...)):
             detail="Emotion classifier not available. Train or load it first.",
         )
 
-    if not file.content_type.startswith("image/"):
+    if not is_image_upload(file):
         raise HTTPException(status_code=400, detail="Uploaded file is not an image")
 
     try:
@@ -680,11 +852,18 @@ async def live_emotion(file: UploadFile = File(...)):
         emotion=label,
         confidence=conf,
     )
+
+
 @app.post("/live_detect", response_model=DetectionResponse)
 async def live_detect(file: UploadFile = File(...)):
     """
     Object detection for webcam snapshots.
-    Returns generic categories like person, dog, car, etc.
+
+    - Maps raw detector labels to high-level categories:
+      human, car, dog, cat, tree, phone, ...
+    - If the category is 'human' AND the face_classifier is available,
+      it crops the region and runs the face classifier to get an identity label.
+    - Adds identity_info from IDENTITY_INFO for humans.
     """
     if object_detector is None:
         raise HTTPException(
@@ -692,23 +871,191 @@ async def live_detect(file: UploadFile = File(...)):
             detail="Object detector not available.",
         )
 
-    if not file.content_type.startswith("image/"):
+    if not is_image_upload(file):
         raise HTTPException(status_code=400, detail="Uploaded file is not an image")
 
     try:
         image_bytes = await file.read()
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Error reading image: {e}")
+
+    # Decode image via Pillow (HEIC supported if pillow-heif is installed)
+    try:
+        img = Image.open(io.BytesIO(image_bytes)).convert("RGB")
+        img_rgb = np.array(img)
+        img_bgr = img_rgb[:, :, ::-1].copy()
+        img_h, img_w = img_bgr.shape[:2]
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Error decoding image: {e}")
+
+    try:
         dets = object_detector.detect(image_bytes, max_dets=10)
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Error processing image: {e}")
+        raise HTTPException(status_code=400, detail=f"Error running object detector: {e}")
 
-    # Filter only categories you care about if you want (optional)
-    # e.g., humans/dogs/cats/vehicles
-    keep_prefixes = {"person", "dog", "cat", "car", "bus", "truck", "motorcycle", "bicycle"}
-    filtered = [
-        d for d in dets
-        if any(k in d["label"] for k in keep_prefixes)
-    ]
+    label_map = {
+        "person": "human",
+        "car": "car",
+        "truck": "car",
+        "bus": "car",
+        "motorcycle": "car",
+        "bicycle": "car",
+        "dog": "dog",
+        "cat": "cat",
+        "cell phone": "phone",
+        "mobile phone": "phone",
+        "potted plant": "tree",
+        "tree": "tree",
+    }
 
-    return DetectionResponse(
-        detections=[DetectionBox(**d) for d in filtered]
-    )
+    detections_out: list[DetectionBox] = []
+
+    for d in dets:
+        raw_label = d.get("label", "")
+        score = float(d.get("score", 0.0))
+        x_norm = float(d.get("x", 0.0))
+        y_norm = float(d.get("y", 0.0))
+        w_norm = float(d.get("w", 0.0))
+        h_norm = float(d.get("h", 0.0))
+
+        category = label_map.get(raw_label)
+        if category is None:
+            continue
+
+        x = x_norm
+        y = y_norm
+        w = w_norm
+        h = h_norm
+
+        identity_label: str | None = None
+        identity_conf: float | None = None
+        identity_info: str | None = None
+
+        if category == "human" and face_classifier is not None:
+            x1 = max(int(x_norm * img_w), 0)
+            y1 = max(int(y_norm * img_h), 0)
+            x2 = min(int((x_norm + w_norm) * img_w), img_w - 1)
+            y2 = min(int((y_norm + h_norm) * img_h), img_h - 1)
+
+            if x2 > x1 and y2 > y1:
+                crop = img_bgr[y1:y2, x1:x2]
+                if crop.size > 0:
+                    success, buffer = cv2.imencode(".jpg", crop)
+                    if success:
+                        crop_bytes = buffer.tobytes()
+                        try:
+                            identity_label, identity_conf = face_classifier.predict_from_bytes(crop_bytes)
+                            if identity_label is not None:
+                                identity_info = IDENTITY_INFO.get(identity_label)
+                        except Exception:
+                            identity_label, identity_conf, identity_info = None, None, None
+
+        detections_out.append(
+            DetectionBox(
+                label=category,
+                raw_label=raw_label,
+                score=score,
+                x=x,
+                y=y,
+                w=w,
+                h=h,
+                identity=identity_label,
+                identity_confidence=identity_conf,
+                identity_info=identity_info,
+            )
+        )
+
+    return DetectionResponse(detections=detections_out)
+
+
+@app.post("/face_feedback")
+async def face_feedback(
+    label: str = Form(...),
+    file: UploadFile = File(...),
+):
+    """
+    Save a corrected face image into the training folder so the model
+    can learn from mistakes later.
+
+    Usage:
+    - label: one of your class names (PTri, Lanh, MTuan, BHa, PTri's Muse, strangers)
+    - file: a FACE CROP image (jpg/png/etc.)
+    Saved to: data/faces/train/<label>/feedback_*.jpg
+
+    Then re-run: python -m src.train_face_model
+    to retrain with this extra feedback data.
+    """
+    if not is_image_upload(file):
+        raise HTTPException(status_code=400, detail="Uploaded file is not an image")
+
+    label = label.strip()
+    if not label:
+        raise HTTPException(status_code=400, detail="Label must not be empty.")
+
+    if face_classifier is not None:
+        known_classes = set(face_classifier.classes)
+        if label not in known_classes:
+            print(
+                f"⚠️ face_feedback received unknown label '{label}'. "
+                f"Known classes: {known_classes}"
+            )
+
+    try:
+        img_bytes = await file.read()
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Error reading image: {e}")
+
+    try:
+        _ = Image.open(io.BytesIO(img_bytes)).convert("RGB")
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Error decoding image: {e}")
+
+    save_dir = Path("data/faces/train") / label
+    save_dir.mkdir(parents=True, exist_ok=True)
+
+    filename = f"feedback_{int(time.time())}.jpg"
+    save_path = save_dir / filename
+
+    with open(save_path, "wb") as f:
+        f.write(img_bytes)
+
+    return {
+        "message": "Feedback image saved successfully.",
+        "label": label,
+        "path": str(save_path),
+    }
+
+
+@app.post("/chat_feedback")
+def chat_feedback(body: ChatFeedbackRequest):
+    """
+    Store user feedback about a chat answer (1–5 stars).
+
+    - rating <= 2  → considered bad (needs improvement; often with a comment)
+    - rating 3     → neutral
+    - rating >= 4  → considered good (candidate for future style examples)
+
+    This does NOT instantly change the model, but creates a growing dataset
+    you can later use to improve prompts or fine-tune.
+    """
+    if body.rating < 1 or body.rating > 5:
+        raise HTTPException(status_code=400, detail="Rating must be between 1 and 5.")
+
+    FEEDBACK_FILE.parent.mkdir(parents=True, exist_ok=True)
+
+    record = {
+        "timestamp": int(time.time()),
+        "question": body.question,
+        "answer": body.answer,
+        "rating": body.rating,
+        "comment": body.comment,
+        "mode": body.mode,
+    }
+
+    try:
+        with FEEDBACK_FILE.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(record, ensure_ascii=False) + "\n")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error writing feedback: {e}")
+
+    return {"message": "Feedback saved. Cảm ơn nha 🫶"}

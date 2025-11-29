@@ -9,6 +9,15 @@ const MODES = {
   VISION: "vision",
 };
 
+const IDENTITY_OPTIONS = [
+  "PTri",
+  "Lanh",
+  "MTuan",
+  "BHa",
+  "PTri's Muse",
+  "strangers",
+];
+
 function App() {
   const [health, setHealth] = useState(null);
   const [documents, setDocuments] = useState([]);
@@ -42,7 +51,7 @@ function App() {
       {
         role: "assistant",
         content:
-          "Hi, I'm IreneAdler. Upload a face image or take a snapshot with your camera, then ask a question about it.",
+          "Hi, I'm IreneAdler. Upload or capture an image, then:\n- Click \"Analyze objects & faces\" to see detections\n- Or ask a question about the image.",
       },
     ],
   });
@@ -54,6 +63,16 @@ function App() {
   // Vision-specific state
   const [visionFile, setVisionFile] = useState(null);
   const [visionPreviewUrl, setVisionPreviewUrl] = useState(null);
+  const [visionDetections, setVisionDetections] = useState([]);
+
+  // Feedback for face classifier
+  const [feedbackLabels, setFeedbackLabels] = useState({});
+  const [feedbackStatus, setFeedbackStatus] = useState(null);
+  const [feedbackLoading, setFeedbackLoading] = useState(false);
+
+  // Chat answer feedback (1–5 rating per assistant message)
+  const [messageFeedback, setMessageFeedback] = useState({});
+  const [sendingChatFeedback, setSendingChatFeedback] = useState(false);
 
   // Camera for Vision
   const videoRef = useRef(null);
@@ -124,6 +143,16 @@ function App() {
     setLoadError(null);
   }
 
+  function getLastUserQuestionForMessage(modeKey, msgIndex) {
+    const msgs = conversations[modeKey] || [];
+    for (let i = msgIndex - 1; i >= 0; i--) {
+      if (msgs[i].role === "user") {
+        return msgs[i].content;
+      }
+    }
+    return "";
+  }
+
   // ---------- Chat send ----------
 
   async function handleSend() {
@@ -140,7 +169,6 @@ function App() {
 
     try {
       if (mode === MODES.VISION) {
-        // Vision mode: /vision_qa
         if (!visionFile) {
           throw new Error(
             "Please upload an image or capture one from the camera before asking."
@@ -184,12 +212,12 @@ function App() {
           (data.answer || "I don't know about this image.") +
           (metaLines.length ? `\n\n${metaLines.join("\n")}` : "");
 
-        setMessagesForMode(mode, [
+        const finalMessages = [
           ...newMessages,
           { role: "assistant", content: assistantText },
-        ]);
+        ];
+        setMessagesForMode(mode, finalMessages);
       } else if (mode === MODES.GENERAL) {
-        // General chat: /chat
         const body = { question };
 
         const res = await fetch(`${API_URL}/chat`, {
@@ -205,12 +233,12 @@ function App() {
         const data = await res.json();
         const assistantText = data.answer || "I don't know.";
 
-        setMessagesForMode(mode, [
+        const finalMessages = [
           ...newMessages,
           { role: "assistant", content: assistantText },
-        ]);
+        ];
+        setMessagesForMode(mode, finalMessages);
       } else {
-        // Doc / Global modes: /ask
         const docIdToUse = mode === MODES.DOC ? selectedDocId : null;
 
         const body = {
@@ -253,10 +281,11 @@ function App() {
           (data.answer || "I couldn't find anything about that.") +
           (metaLines.length ? `\n\n${metaLines.join("\n")}` : "");
 
-        setMessagesForMode(mode, [
+        const finalMessages = [
           ...newMessages,
           { role: "assistant", content: assistantText },
-        ]);
+        ];
+        setMessagesForMode(mode, finalMessages);
       }
     } catch (err) {
       console.error(err);
@@ -291,12 +320,18 @@ function App() {
       }
       setVisionFile(file);
       setVisionPreviewUrl(URL.createObjectURL(file));
+      setVisionDetections([]);
+      setFeedbackLabels({});
+      setFeedbackStatus(null);
     } else {
       if (visionPreviewUrl) {
         URL.revokeObjectURL(visionPreviewUrl);
       }
       setVisionFile(null);
       setVisionPreviewUrl(null);
+      setVisionDetections([]);
+      setFeedbackLabels({});
+      setFeedbackStatus(null);
     }
   }
 
@@ -357,6 +392,9 @@ function App() {
 
         setVisionFile(file);
         setVisionPreviewUrl(URL.createObjectURL(blob));
+        setVisionDetections([]);
+        setFeedbackLabels({});
+        setFeedbackStatus(null);
 
         // release camera after capture
         stopCamera();
@@ -364,6 +402,340 @@ function App() {
       "image/jpeg",
       0.9
     );
+  }
+
+  // ---------- Vision: Detect objects & faces (live_detect) ----------
+
+  async function handleVisionDetect() {
+    if (!visionFile) {
+      setLoadError("Please upload or capture an image first.");
+      return;
+    }
+
+    setLoading(true);
+    setLoadError(null);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", visionFile);
+
+      const res = await fetch(`${API_URL}/live_detect`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        throw new Error(`live_detect failed with status ${res.status}`);
+      }
+
+      const data = await res.json();
+      const detections = Array.isArray(data.detections)
+        ? data.detections
+        : [];
+
+      setVisionDetections(detections);
+      setFeedbackLabels({});
+      setFeedbackStatus(null);
+
+      let text = "";
+
+      if (detections.length === 0) {
+        text = "I didn't detect any of the configured objects in this image.";
+      } else {
+        const lines = ["Objects detected:"];
+        for (const d of detections) {
+          const label = d.label || d.raw_label || "unknown";
+          const score =
+            typeof d.score === "number" ? d.score.toFixed(2) : "unknown";
+
+          let line = `- ${label} (score: ${score})`;
+
+          if (label === "human" && d.identity) {
+            const iconf =
+              typeof d.identity_confidence === "number"
+                ? d.identity_confidence.toFixed(2)
+                : "unknown";
+            line += ` • identity: ${d.identity} (conf: ${iconf})`;
+
+            if (d.identity_info) {
+              line += ` • info: ${d.identity_info}`;
+            }
+          }
+
+          if (
+            typeof d.x === "number" &&
+            typeof d.y === "number" &&
+            typeof d.w === "number" &&
+            typeof d.h === "number"
+          ) {
+            line += ` • bbox: x=${d.x.toFixed(2)}, y=${d.y.toFixed(
+              2
+            )}, w=${d.w.toFixed(2)}, h=${d.h.toFixed(2)}`;
+          }
+
+          lines.push(line);
+        }
+        text = lines.join("\n");
+      }
+
+      const visionMessages = conversations[MODES.VISION] || [];
+      setMessagesForMode(MODES.VISION, [
+        ...visionMessages,
+        { role: "assistant", content: text },
+      ]);
+    } catch (err) {
+      console.error(err);
+      setLoadError(err.message || "Something went wrong during detection.");
+      const visionMessages = conversations[MODES.VISION] || [];
+      setMessagesForMode(MODES.VISION, [
+        ...visionMessages,
+        {
+          role: "assistant",
+          content:
+            "Sorry, something went wrong while running object & face detection.",
+        },
+      ]);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // ---------- Vision feedback: crop & send to /face_feedback ----------
+
+  function onFeedbackLabelChange(idx, value) {
+    setFeedbackLabels((prev) => ({
+      ...prev,
+      [idx]: value,
+    }));
+  }
+
+  function cropDetectionToBlob(detection) {
+    return new Promise((resolve, reject) => {
+      if (!visionFile) {
+        reject(new Error("No vision file available for feedback."));
+        return;
+      }
+
+      const img = new Image();
+      const url = URL.createObjectURL(visionFile);
+
+      img.onload = () => {
+        try {
+          const { x, y, w, h } = detection;
+          const x1 = Math.max(Math.floor(x * img.width), 0);
+          const y1 = Math.max(Math.floor(y * img.height), 0);
+          const x2 = Math.min(
+            Math.floor((x + w) * img.width),
+            img.width
+          );
+          const y2 = Math.min(
+            Math.floor((y + h) * img.height),
+            img.height
+          );
+
+          const boxW = Math.max(x2 - x1, 1);
+          const boxH = Math.max(y2 - y1, 1);
+
+          const canvas = document.createElement("canvas");
+          canvas.width = boxW;
+          canvas.height = boxH;
+          const ctx = canvas.getContext("2d");
+          ctx.drawImage(
+            img,
+            x1,
+            y1,
+            boxW,
+            boxH,
+            0,
+            0,
+            boxW,
+            boxH
+          );
+
+          canvas.toBlob(
+            (blob) => {
+              URL.revokeObjectURL(url);
+              if (!blob) {
+                reject(new Error("Failed to create feedback blob."));
+              } else {
+                resolve(blob);
+              }
+            },
+            "image/jpeg",
+            0.95
+          );
+        } catch (err) {
+          URL.revokeObjectURL(url);
+          reject(err);
+        }
+      };
+
+      img.onerror = (err) => {
+        URL.revokeObjectURL(url);
+        reject(err);
+      };
+
+      img.src = url;
+    });
+  }
+
+  async function handleSendFeedback(idx) {
+    const det = visionDetections[idx];
+    if (!det) {
+      setFeedbackStatus("Cannot find that detection.");
+      return;
+    }
+    if (det.label !== "human") {
+      setFeedbackStatus("Feedback is only for human detections.");
+      return;
+    }
+
+    const correctedLabel = feedbackLabels[idx];
+    if (!correctedLabel) {
+      setFeedbackStatus("Choose the correct identity before sending feedback.");
+      return;
+    }
+
+    try {
+      setFeedbackLoading(true);
+      setFeedbackStatus("Creating face crop and sending feedback...");
+
+      const blob = await cropDetectionToBlob(det);
+      const file = new File([blob], "feedback_crop.jpg", {
+        type: "image/jpeg",
+      });
+
+      const formData = new FormData();
+      formData.append("label", correctedLabel);
+      formData.append("file", file);
+
+      const res = await fetch(`${API_URL}/face_feedback`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        throw new Error(`face_feedback failed with status ${res.status}`);
+      }
+
+      const data = await res.json();
+      console.log("Feedback saved:", data);
+
+      setFeedbackStatus(
+        `Saved feedback for ${correctedLabel}. It will take effect after you retrain the face model.`
+      );
+    } catch (err) {
+      console.error(err);
+      setFeedbackStatus(err.message || "Feedback failed.");
+    } finally {
+      setFeedbackLoading(false);
+    }
+  }
+
+  // ---------- Chat feedback (rating 1–5) ----------
+
+  function keyForMessage(modeKey, index) {
+    return `${modeKey}-${index}`;
+  }
+
+  function handleRateMessage(modeKey, index, rating) {
+    const k = keyForMessage(modeKey, index);
+    setMessageFeedback((prev) => {
+      const existing = prev[k] || {};
+      const waitingForComment = rating <= 2; // only ask for comment when rating is 1–2
+      return {
+        ...prev,
+        [k]: {
+          ...existing,
+          rating,
+          waitingForComment,
+          comment: existing.comment || "",
+          submitted: rating >= 4 ? true : existing.submitted || false, // will mark submitted after API
+          error: null,
+        },
+      };
+    });
+
+    if (rating >= 3) {
+      // rating 3–5 → send feedback immediately
+      submitChatFeedback(modeKey, index, rating, null);
+    }
+  }
+
+  function handleFeedbackCommentChange(modeKey, index, value) {
+    const k = keyForMessage(modeKey, index);
+    setMessageFeedback((prev) => ({
+      ...prev,
+      [k]: {
+        ...(prev[k] || {}),
+        comment: value,
+      },
+    }));
+  }
+
+  function handleSubmitFeedbackWithComment(modeKey, index, skip) {
+    const k = keyForMessage(modeKey, index);
+    const state = messageFeedback[k] || {};
+    const rating = state.rating;
+    if (!rating) return;
+
+    const comment = skip ? null : (state.comment || "").trim() || null;
+    submitChatFeedback(modeKey, index, rating, comment);
+  }
+
+  async function submitChatFeedback(modeKey, index, rating, comment) {
+    try {
+      setSendingChatFeedback(true);
+
+      const msgs = conversations[modeKey] || [];
+      const answerMsg = msgs[index];
+      if (!answerMsg || answerMsg.role !== "assistant") {
+        return;
+      }
+      const answer = answerMsg.content;
+      const question = getLastUserQuestionForMessage(modeKey, index);
+
+      const body = {
+        question,
+        answer,
+        rating,
+        comment,
+        mode: modeKey,
+      };
+
+      const res = await fetch(`${API_URL}/chat_feedback`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      });
+
+      if (!res.ok) {
+        throw new Error(`chat_feedback failed with status ${res.status}`);
+      }
+
+      const k = keyForMessage(modeKey, index);
+      setMessageFeedback((prev) => ({
+        ...prev,
+        [k]: {
+          ...(prev[k] || {}),
+          submitted: true,
+          waitingForComment: false,
+          error: null,
+        },
+      }));
+    } catch (err) {
+      console.error(err);
+      const k = keyForMessage(modeKey, index);
+      setMessageFeedback((prev) => ({
+        ...prev,
+        [k]: {
+          ...(prev[k] || {}),
+          error: err.message || "Feedback failed",
+        },
+      }));
+    } finally {
+      setSendingChatFeedback(false);
+    }
   }
 
   // ---------- Doc upload ----------
@@ -493,6 +865,7 @@ function App() {
               <StatusPill label="Intent" ok={health.question_classifier} />
               <StatusPill label="Emotion" ok={health.emotion_classifier} />
               <StatusPill label="Reranker" ok={health.reranker} />
+              <StatusPill label="Object" ok={health.object_detector} />
             </div>
           )}
         </div>
@@ -592,7 +965,7 @@ function App() {
         </header>
 
         <div className="chat-messages">
-          {/* Vision: upload + camera */}
+          {/* Vision: upload + camera + feedback */}
           {mode === MODES.VISION && (
             <div className="vision-panel">
               <div className="vision-row">
@@ -659,19 +1032,140 @@ function App() {
 
               {visionPreviewUrl && (
                 <div className="vision-preview">
-                  <div className="vision-card-title">Current image</div>
+                  <div className="vision-card-title">
+                    Current image &amp; analysis
+                  </div>
                   <img
                     src={visionPreviewUrl}
                     alt="Selected"
                     className="vision-preview-img"
                   />
+                  <div style={{ marginTop: "0.75rem" }}>
+                    <button
+                      className="upload-btn"
+                      type="button"
+                      onClick={handleVisionDetect}
+                      disabled={loading || !visionFile}
+                    >
+                      {loading ? "Analyzing..." : "Analyze objects & faces"}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {visionDetections.length > 0 && (
+                <div className="vision-detections">
+                  <div className="vision-card-title">
+                    Detections &amp; feedback
+                  </div>
+                  <ul className="det-list">
+                    {visionDetections.map((d, idx) => {
+                      const label = d.label || d.raw_label || "unknown";
+                      const score =
+                        typeof d.score === "number"
+                          ? d.score.toFixed(2)
+                          : "unknown";
+
+                      const hasBBox =
+                        typeof d.x === "number" &&
+                        typeof d.y === "number" &&
+                        typeof d.w === "number" &&
+                        typeof d.h === "number";
+
+                      return (
+                        <li key={idx} className="det-item">
+                          <div className="det-main">
+                            <div>
+                              <strong>{label}</strong> (score {score})
+                            </div>
+                            {label === "human" && (
+                              <div className="det-sub">
+                                <div>
+                                  Model guess:{" "}
+                                  <code>
+                                    {d.identity || "unknown"} (
+                                    {typeof d.identity_confidence ===
+                                      "number"
+                                      ? d.identity_confidence.toFixed(2)
+                                      : "?"}
+                                    )
+                                  </code>
+                                </div>
+                                {d.identity_info && (
+                                  <div className="hint-text small">
+                                    {d.identity_info}
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                            {hasBBox && (
+                              <div className="tiny-text">
+                                bbox: x={d.x.toFixed(2)}, y={d.y.toFixed(
+                                  2
+                                )}, w={d.w.toFixed(2)}, h={d.h.toFixed(2)}
+                              </div>
+                            )}
+                          </div>
+
+                          {label === "human" && (
+                            <div className="det-feedback">
+                              <select
+                                className="feedback-select"
+                                value={feedbackLabels[idx] || ""}
+                                onChange={(e) =>
+                                  onFeedbackLabelChange(idx, e.target.value)
+                                }
+                              >
+                                <option value="">
+                                  Correct identity (optional)
+                                </option>
+                                {IDENTITY_OPTIONS.map((opt) => (
+                                  <option key={opt} value={opt}>
+                                    {opt}
+                                  </option>
+                                ))}
+                              </select>
+                              <button
+                                type="button"
+                                className="secondary-btn"
+                                onClick={() => handleSendFeedback(idx)}
+                                disabled={feedbackLoading}
+                              >
+                                {feedbackLoading
+                                  ? "Sending..."
+                                  : "Send feedback"}
+                              </button>
+                            </div>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                  {feedbackStatus && (
+                    <div
+                      className="hint-text small"
+                      style={{ marginTop: "0.5rem" }}
+                    >
+                      {feedbackStatus}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
           )}
 
           {currentMessages.map((m, idx) => (
-            <MessageBubble key={idx} message={m} />
+            <MessageBubble
+              key={idx}
+              mode={mode}
+              index={idx}
+              message={m}
+              feedback={messageFeedback[keyForMessage(mode, idx)]}
+              onRate={handleRateMessage}
+              onCommentChange={handleFeedbackCommentChange}
+              onSubmitComment={handleSubmitFeedbackWithComment}
+              sendingChatFeedback={sendingChatFeedback}
+            />
           ))}
 
           {loading && (
@@ -732,8 +1226,25 @@ function StatusPill({ label, ok }) {
   );
 }
 
-function MessageBubble({ message }) {
+function MessageBubble({
+  mode,
+  index,
+  message,
+  feedback,
+  onRate,
+  onCommentChange,
+  onSubmitComment,
+  sendingChatFeedback,
+}) {
   const isUser = message.role === "user";
+  const showFeedback = !isUser; // only on assistant messages
+
+  const rating = feedback?.rating;
+  const waitingForComment = feedback?.waitingForComment;
+  const submitted = feedback?.submitted;
+  const error = feedback?.error;
+  const comment = feedback?.comment || "";
+
   return (
     <div
       className={
@@ -751,6 +1262,82 @@ function MessageBubble({ message }) {
         {message.content.split("\n").map((line, i) => (
           <p key={i}>{line}</p>
         ))}
+
+        {showFeedback && (
+          <div className="message-feedback">
+            {!submitted && !waitingForComment && !rating && (
+              <div className="feedback-row">
+                <span className="tiny-text">Rate this answer:</span>
+                <div className="feedback-stars">
+                  {[1, 2, 3, 4, 5].map((r) => (
+                    <button
+                      key={r}
+                      type="button"
+                      className={
+                        "star-btn " + (rating && rating >= r ? "star-on" : "")
+                      }
+                      onClick={() => onRate(mode, index, r)}
+                    >
+                      {r}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {waitingForComment && (
+              <div className="feedback-comment-block">
+                <div className="tiny-text">
+                  You gave {rating}★. Nếu câu trả lời chưa ổn, bạn có thể gợi ý
+                  Irene nên trả lời thế nào tốt hơn (optional):
+                </div>
+                <textarea
+                  className="feedback-textarea"
+                  rows={2}
+                  value={comment}
+                  onChange={(e) =>
+                    onCommentChange(mode, index, e.target.value)
+                  }
+                  placeholder="Ví dụ: trả lời ngắn gọn hơn / dùng tiếng Việt tự nhiên hơn / tập trung vào X..."
+                />
+                <div className="feedback-actions">
+                  <button
+                    type="button"
+                    className="secondary-btn"
+                    disabled={sendingChatFeedback}
+                    onClick={() => onSubmitComment(mode, index, false)}
+                  >
+                    {sendingChatFeedback ? "Sending..." : "Send feedback"}
+                  </button>
+                  <button
+                    type="button"
+                    className="tiny-link-btn"
+                    disabled={sendingChatFeedback}
+                    onClick={() => onSubmitComment(mode, index, true)}
+                  >
+                    Skip comment
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {submitted && (
+              <div className="tiny-text feedback-thanks">
+                {rating >= 4
+                  ? `Thanks for the ${rating}★!`
+                  : rating
+                    ? `Thanks for the feedback (${rating}★).`
+                    : "Thanks for the feedback."}
+              </div>
+            )}
+
+            {error && (
+              <div className="tiny-text" style={{ color: "#f87171" }}>
+                {error}
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

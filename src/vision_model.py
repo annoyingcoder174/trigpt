@@ -8,6 +8,14 @@ from torch import nn
 from torchvision import transforms, models
 from PIL import Image
 
+# --- HEIC support ---
+try:
+    import pillow_heif
+    pillow_heif.register_heif_opener()
+    print("HEIC/HEIF support enabled via pillow-heif.")
+except ImportError:
+    print("pillow-heif not installed; HEIC/HEIF images may not work.")
+
 
 def get_device():
     if torch.backends.mps.is_available():
@@ -22,6 +30,13 @@ def get_device():
 
 
 class FaceClassifier:
+    """
+    Generic face classifier using ResNet18.
+
+    It reads the class names from the training checkpoint:
+      checkpoint["classes"] -> e.g. ["PTri", "Lanh", "MTuan", "BHa", "PTri's Muse (my muse)", "HPham"]
+    """
+
     def __init__(self, checkpoint_path: Path | str = "models/face_classifier.pt", device: torch.device | None = None):
         checkpoint_path = Path(checkpoint_path)
         if not checkpoint_path.exists():
@@ -80,6 +95,7 @@ class FaceClassifier:
     def predict_from_bytes(self, image_bytes: bytes) -> tuple[str, float]:
         """
         For use in API: take raw bytes, open as image, run prediction.
+        Works for JPEG/PNG/HEIC/etc if pillow-heif is installed.
         """
         img = Image.open(io.BytesIO(image_bytes))
         return self.predict_pil(img)
