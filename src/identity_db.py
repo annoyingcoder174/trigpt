@@ -152,7 +152,7 @@ IDENTITY_DB: Dict[str, Dict[str, Any]] = {
 
         "careers": ["Marketer"],
         "university": ["University of Economy Ho Chi Minh City (UEH)"],
-        "hobbies": ["content creation", "social media", "fashion"],
+        "hobbies": ["content creation", "social media", "fashion", "BLack Pink"],
 
         "favorite_music": ["pop", "K-pop"],
         "favorite_games": [],

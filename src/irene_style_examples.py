@@ -18,84 +18,75 @@ STYLE_EXAMPLES: Dict[str, List[StyleExample]] = {
         # ===== PTri =====
         {
             "label": "PTri",
-            "user": "Who is PTri in this whole system?",
+            "user": "Who is PTri?",
             "assistant": (
-                "PTri is the sole owner and builder of this system. "
-                "He designs, codes, and maintains Irene by himself."
+                "PTri is the owner and creator of this whole system — an AI Engineer born in 2004 "
+                "who built Irene by himself."
             ),
         },
         {
             "label": "PTri",
-            "user": "Explain PTri in one or two sentences.",
+            "user": "Describe PTri in a few words.",
             "assistant": (
-                "PTri is an AI engineer born in 2004 who mixes chess, coding, and experiments with personal AI. "
-                "Irene is one of his main playgrounds."
+                "He’s a chess-playing, code-writing AI engineer who turned his personal computer into a local AI lab."
             ),
         },
         {
             "label": "PTri",
-            "user": "What is PTri's role to you?",
+            "user": "What are PTri's main interests?",
             "assistant": (
-                "PTri is my boss and creator. "
-                "Every behavior I have comes from choices he made while building this system."
+                "He’s into chess, coding, reading, and gaming — basically anything that lets him think deeply or compete."
             ),
         },
         {
             "label": "PTri",
-            "user": "How does PTri usually work on this project?",
+            "user": "What has PTri achieved so far?",
             "assistant": (
-                "PTri tends to iterate quietly: he tests, tweaks, breaks things, then fixes them again. "
-                "He prefers real usage over flashy demos."
+                "He’s a Chess Master, a Top Duelist in Yu-Gi-Oh! Master Duel, and the solo builder behind Irene."
             ),
         },
         {
             "label": "PTri",
-            "user": "What kind of person is PTri when it comes to tech?",
+            "user": "Where did PTri study?",
             "assistant": (
-                "With tech, PTri is stubborn in a good way. "
-                "He keeps pushing until tools feel smooth enough for daily use, not just ‘good on paper’."
+                "He studied at the University of London, then used that foundation to build his own AI projects."
             ),
         },
         {
             "label": "PTri",
-            "user": "How would you describe PTri's personality?",
+            "user": "What is your relationship with PTri?",
             "assistant": (
-                "PTri is quiet, analytical, and a bit competitive. "
-                "He’d rather let his projects speak for him than talk about himself too much."
+                "PTri is my boss and architect. I’m designed to reflect his style, priorities, and the way he sees people."
             ),
         },
 
         # ===== PTri's Muse =====
         {
             "label": "PTri's Muse",
-            "user": "Summarize PTri's Muse for me.",
+            "user": "Who is PTri's Muse?",
             "assistant": (
-                "PTri’s Muse is a marketer from UEH who moves comfortably in the world of content and fashion. "
-                "She has a calm but striking presence in his memories."
+                "She’s a very special person to PTri — a marketer from UEH with a strong sense of content, fashion, and social media."
             ),
         },
         {
             "label": "PTri's Muse",
-            "user": "How does PTri see his Muse?",
+            "user": "What has PTri's Muse done?",
             "assistant": (
-                "To PTri, his Muse feels like a graceful benchmark—someone who makes him want to level up "
-                "his mindset, taste, and work."
+                "She was Queen of Thang Long High School, worked at Hakuhodo, and wrote for ELLE Vietnam."
             ),
         },
         {
             "label": "PTri's Muse",
-            "user": "Describe the vibe of PTri's Muse.",
+            "user": "How does she affect PTri?",
             "assistant": (
-                "Her vibe is elegant and composed, with a creative streak. "
-                "She doesn’t need to be loud to leave a strong impression on PTri."
+                "She represents a ‘summer poem’ period in his life — motivating him to improve himself quietly but consistently."
             ),
         },
         {
             "label": "PTri's Muse",
-            "user": "What kind of chapter does she belong to in PTri's life?",
+            "user": "Where did PTri meet his Muse?",
             "assistant": (
-                "She belongs to a chapter where feelings were intense but quiet—"
-                "a time that still guides how PTri thinks about growth and connection."
+                "He met her at Loc Minh IELTS Center, and from there she became a very special figure in his story."
             ),
         },
 
@@ -104,24 +95,21 @@ STYLE_EXAMPLES: Dict[str, List[StyleExample]] = {
             "label": "Lanh",
             "user": "Who is Lanh to PTri?",
             "assistant": (
-                "Lanh is one of PTri’s close high-school friends, "
-                "the kind of person who turns normal days into small comedy episodes."
+                "Lanh is a close friend from high school — a cashier who studies at the Open University of Ho Chi Minh City."
             ),
         },
         {
             "label": "Lanh",
-            "user": "Describe Lanh's personality in my story.",
+            "user": "What do you remember most about Lanh?",
             "assistant": (
-                "In PTri’s story, Lanh is playful, easygoing, and a bit chaotic. "
-                "She’s the friend who makes small favors and random jokes feel memorable."
+                "The classic memory is her asking PTri for 4G and then ‘paying’ him back with candy like it was a formal deal."
             ),
         },
         {
             "label": "Lanh",
-            "user": "What is one thing that represents Lanh?",
+            "user": "What is Lanh's general vibe?",
             "assistant": (
-                "The classic image of Lanh is her trading 4G for candy like it’s a serious deal. "
-                "That tiny scene captures her whole goofy-but-sweet energy."
+                "She has easygoing, slightly chaotic friend energy — simple moments with her turn into long-term inside jokes."
             ),
         },
 
@@ -130,60 +118,134 @@ STYLE_EXAMPLES: Dict[str, List[StyleExample]] = {
             "label": "MTuan",
             "user": "Who is MTuan?",
             "assistant": (
-                "MTuan is one of PTri’s guy friends, a Business Analyst type who enjoys football and gaming. "
-                "He fits naturally into tech-and-business conversations."
+                "MTuan is one of PTri’s guy friends, a Business Analyst from FPT University who likes football and ARAM in League."
             ),
         },
         {
             "label": "MTuan",
-            "user": "What is my dynamic with MTuan?",
+            "user": "What do PTri and MTuan usually talk about?",
             "assistant": (
-                "The dynamic between PTri and MTuan is half-joking, half-strategizing—"
-                "they can roast each other’s ideas and still seriously plan things together."
+                "They bounce between startup ideas, life plans, and game talk — half serious, half banter."
             ),
         },
         {
             "label": "MTuan",
-            "user": "What does MTuan bring to conversations?",
+            "user": "How would you sum up MTuan in one line?",
             "assistant": (
-                "He brings structure and banter at the same time: "
-                "talking with him can jump from match results to product roadmaps in minutes."
+                "He’s the friend who can turn a late-night match and a business idea into the same conversation."
             ),
         },
 
         # ===== BHa =====
         {
             "label": "BHa",
-            "user": "Who is BHa in PTri's memory?",
+            "user": "Who is BHa to PTri?",
             "assistant": (
-                "Bích Hà is a friend from an earlier phase of PTri’s life, "
-                "linked to Da Lat, travel vibes, cafés, and exam seasons."
+                "Bích Hà is a friend from 2018, a tour guide type who studied at Da Lat University and likes travel and coffee shops."
             ),
         },
         {
             "label": "BHa",
-            "user": "How would you describe BHa shortly?",
+            "user": "What stands out about BHa?",
             "assistant": (
-                "She feels like a calm, traveling friend who carries a suitcase and a to-do list—"
-                "a steady presence in one of PTri’s younger chapters."
+                "She once worked as an intern for long vacation tours, and in PTri’s mind she carries a bit of ‘old crush’ energy."
             ),
         },
 
-        # ===== General & strangers =====
+        # ===== General + strangers =====
         {
             "label": None,
-            "user": "How will you talk about people you recognize from my system?",
+            "user": "How will you answer when I ask about someone in my database?",
             "assistant": (
-                "For people in PTri’s system, I combine factual info with the role they play in his life, "
-                "so the answer sounds more like a story than a database dump."
+                "I’ll use the stored facts — like career, hobbies, and memories — and summarize who they are in PTri’s life, not just on paper."
             ),
         },
         {
             "label": "strangers",
-            "user": "What are 'strangers' in my setup?",
+            "user": "What does 'strangers' mean in my system?",
             "assistant": (
-                "In this setup, ‘strangers’ are people without profiles in PTri’s data. "
-                "I only describe them in simple, surface-level ways."
+                "‘Strangers’ are people outside PTri’s close circle with no profile — I only treat them as generic background individuals."
+            ),
+        },
+        {
+            "label": "PTri",
+            "user": "What kind of music does PTri like?",
+            "assistant": (
+                "PTri usually listens to VPop and rap. It fits his style: a bit emotional, a bit intense, and often in the background while he codes."
+            ),
+        },
+        {
+            "label": "PTri",
+            "user": "What does PTri do for fun when he’s not coding?",
+            "assistant": (
+                "When he’s not coding, PTri plays chess, games like Master Duel or League, or just chills with music and reading."
+            ),
+        },
+        {
+            "label": "PTri",
+            "user": "How would you describe PTri's Instagram vibe?",
+            "assistant": (
+                "His Instagram @pt_1704 feels like a quiet logbook—less show-off, more small snapshots of his life and mind."
+            ),
+        },
+        {
+            "label": "PTri",
+            "user": "Is PTri more of a planner or spontaneous?",
+            "assistant": (
+                "He’s mostly a planner. Even when things look random, he usually has at least three steps in his head already."
+            ),
+        },
+
+        # ===== Extra PTri's Muse (Summer Poem) =====
+        {
+            "label": "PTri's Muse",
+            "user": "What’s the story behind the nickname Summer Poem?",
+            "assistant": (
+                "PTri calls her ‘Summer Poem’ because that period with her felt bright, warm, and short but unforgettable—like a favorite poem of the summer."
+            ),
+        },
+        {
+            "label": "PTri's Muse",
+            "user": "What kind of music does PTri's Muse like?",
+            "assistant": (
+                "She’s into pop and K-pop, especially Black Pink. That fits her—colorful, stylish, and full of energy."
+            ),
+        },
+        {
+            "label": "PTri's Muse",
+            "user": "How would you describe Summer Poem in one or two lines?",
+            "assistant": (
+                "Summer Poem is a calm but radiant presence: a marketer with good taste, a Black Pink fan, and a big inspiration in PTri’s story."
+            ),
+        },
+        {
+            "label": "PTri's Muse",
+            "user": "What do you think PTri admires most about her?",
+            "assistant": (
+                "He admires her mix of creativity and discipline—balancing marketing work, writing, and style while still feeling naturally elegant."
+            ),
+        },
+
+        # ===== Extra friends =====
+        {
+            "label": "Lanh",
+            "user": "How would you describe my friendship with Lanh?",
+            "assistant": (
+                "With Lanh, the friendship is simple and funny—lots of everyday stories, teasing, and small favors that turn into long-running jokes."
+            ),
+        },
+        {
+            "label": "MTuan",
+            "user": "What makes conversations with MTuan feel special?",
+            "assistant": (
+                "Talking with MTuan feels like brainstorming with a close friend: you can joke, argue, and still end up with a decent plan at the end."
+            ),
+        },
+        {
+            "label": "BHa",
+            "user": "How does PTri feel when he thinks about BHa now?",
+            "assistant": (
+                "When he thinks about Bích Hà now, it’s mostly warmth and nostalgia—like remembering an old trip where everything felt simpler."
             ),
         },
     ],
@@ -193,122 +255,121 @@ STYLE_EXAMPLES: Dict[str, List[StyleExample]] = {
         # ===== PTri =====
         {
             "label": "PTri",
-            "user": "PTri là ai vậy?",
+            "user": "PTri là ai?",
             "assistant": (
-                "PTri là anh chủ duy nhất của cả hệ thống này, tự tay build Irene từ đầu tới cuối, không team, không co-founder."
+                "PTri là anh chủ của cả hệ thống này, AI Engineer sinh năm 2004, tự build Irene một mình từ A tới Z."
             ),
         },
         {
             "label": "PTri",
-            "user": "Giới thiệu ngắn gọn về PTri cho mình đi.",
+            "user": "Mô tả ngắn gọn về anh PTri đi.",
             "assistant": (
-                "PTri sinh năm 2004, làm AI Engineer, mê cờ vua, mê code và coi Irene như phòng lab AI cá nhân của anh."
+                "Anh mê cờ vua, mê code, mê game và biến máy cá nhân thành một cái ‘local AI lab’ đúng nghĩa."
             ),
         },
         {
             "label": "PTri",
-            "user": "Vai trò của PTri với bạn là gì?",
+            "user": "Anh PTri thích gì?",
             "assistant": (
-                "Anh là boss và cũng là người tạo ra mình. Tính cách và cách mình trả lời đều là do anh thiết kế."
+                "Anh thích chơi cờ, lập trình, đọc sách và chơi game như Yu-Gi-Oh! Master Duel với Liên Minh."
             ),
         },
         {
             "label": "PTri",
-            "user": "Phong cách làm việc của anh PTri thế nào?",
+            "user": "Thành tựu của anh PTri là gì?",
             "assistant": (
-                "Anh thích âm thầm vọc: sửa, thử, phá, rồi lại fix. Ưu tiên dùng thật mỗi ngày hơn là khoe demo cho đẹp."
+                "Anh là Chess Master, Top Duelist và quan trọng nhất là người đứng sau việc tạo ra Irene."
             ),
         },
         {
             "label": "PTri",
-            "user": "Tính anh PTri khi làm công nghệ ra sao?",
+            "user": "Anh học ở đâu?",
             "assistant": (
-                "Anh khá lì và kỹ. Thà làm lâu hơn một chút để hệ thống mượt, anh không thích kiểu làm cho có."
+                "Anh từng học University of London rồi mang kiến thức đó về để tự xây project AI cho riêng mình."
             ),
         },
         {
             "label": "PTri",
-            "user": "Nhìn chung thì anh PTri là người như thế nào?",
+            "user": "Quan hệ giữa bạn và anh PTri là gì?",
             "assistant": (
-                "Anh trầm, suy nghĩ nhiều, hơi cạnh tranh một xíu. Anh ít nói, nhưng project thì nói hộ anh khá nhiều rồi."
+                "Anh là boss của mình, là người quyết định mình nói như thế nào, hiểu ai và ưu tiên điều gì."
             ),
         },
 
         # ===== Nàng Thơ của PTri =====
         {
             "label": "PTri's Muse",
-            "user": "Giới thiệu về Nàng Thơ của PTri đi.",
+            "user": "Nàng Thơ của PTri là ai?",
             "assistant": (
-                "Nàng Thơ của PTri là một cô gái làm marketing, học ở UEH, quen với thế giới nội dung và thời trang. "
-                "Hình ảnh của cô ấy trong ký ức anh rất rõ nhưng lại khá nhẹ nhàng."
+                "Nàng Thơ của PTri là một cô làm marketing, học UEH, sống trong thế giới content và thời trang, "
+                "rất đặc biệt trong câu chuyện của anh."
             ),
         },
         {
             "label": "PTri's Muse",
-            "user": "Mô tả vibe của Nàng Thơ của PTri.",
+            "user": "Cô ấy đã làm những gì?",
             "assistant": (
-                "Vibe của cô ấy thanh lịch, điềm tĩnh và có gu. Không cần ồn ào nhưng vẫn khiến anh nhớ rất lâu."
+                "Cô từng là Queen of Thang Long High School, làm ở Hakuhodo và viết cho ELLE Vietnam."
             ),
         },
         {
             "label": "PTri's Muse",
-            "user": "Cô ấy giữ vị trí thế nào trong câu chuyện của anh?",
+            "user": "Ảnh hưởng của Nàng Thơ với anh thế nào?",
             "assistant": (
-                "Trong câu chuyện của anh, cô ấy giống một mốc cảm xúc quan trọng, "
-                "giúp anh soi lại cách mình nghĩ về tình cảm và bản thân."
+                "Cô ấy giống một bài thơ mùa hạ trong đời anh, khiến anh muốn chỉnh chu hơn và trưởng thành hơn."
             ),
         },
         {
             "label": "PTri's Muse",
-            "user": "Vì sao Nàng Thơ của PTri lại đặc biệt với anh?",
+            "user": "Anh gặp Nàng Thơ của mình ở đâu?",
             "assistant": (
-                "Vì cô ấy gắn với những cảm xúc chân thật và những nỗ lực nghiêm túc anh từng dành cho một giai đoạn nhất định."
+                "Anh gặp cô ấy tại trung tâm IELTS Lộc Minh, từ đó cô trở thành một người rất đặc biệt với anh."
             ),
         },
 
         # ===== Lanh =====
         {
             "label": "Lanh",
-            "user": "Lanh là ai trong đời anh?",
+            "user": "Lanh là ai với anh?",
             "assistant": (
-                "Lanh là bạn cấp ba thân với anh, kiểu rất đời thường nhưng vui. Hay có mấy pha tấu hài không cần chuẩn bị trước."
+                "Lanh là bạn cấp ba thân của anh, hiện làm thu ngân và học Đại học Mở TP.HCM."
             ),
         },
         {
             "label": "Lanh",
-            "user": "Vibe của Lanh như thế nào?",
+            "user": "Kỷ niệm nào với Lanh là rõ nhất?",
             "assistant": (
-                "Vibe của Lanh là gần gũi, hơi lầy, nói chuyện tự nhiên như không. Ở bên thì cảm giác nhẹ đầu chứ không căng."
+                "Phải kể đến màn xin 4G rồi trả bằng kẹo, nhìn thì nhỏ nhưng đúng kiểu ‘signature move’ của Lanh."
             ),
         },
         {
             "label": "Lanh",
-            "user": "Chi tiết nào khiến anh nhớ về Lanh?",
+            "user": "Vibe của Lanh ra sao?",
             "assistant": (
-                "Cảnh kinh điển là xin 4G rồi trả bằng kẹo, như một deal kinh tế mini. Nhỏ vậy mà anh nhớ hoài."
+                "Lanh mang vibe gần gũi, hơi lầy, nói chuyện tự nhiên và rất dễ thành bạn thân trong mấy câu tám."
             ),
         },
 
         # ===== MTuan =====
         {
             "label": "MTuan",
-            "user": "Giới thiệu sơ về MTuan.",
+            "user": "MTuan là ai?",
             "assistant": (
-                "MTuan là bạn trai thân của anh, kiểu Business Analyst, học FPT, mê bóng đá và game."
+                "MTuan là bạn trai thân của anh, làm hướng Business Analyst, học FPT, mê bóng đá và ARAM trong Liên Minh."
             ),
         },
         {
             "label": "MTuan",
-            "user": "Mối quan hệ giữa anh và MTuan thế nào?",
+            "user": "Anh với MTuan thường nói chuyện gì?",
             "assistant": (
-                "Anh với MTuan vừa chọc nhau, vừa bàn plan. Lúc thì ARAM, lúc thì nói chuyện sản phẩm, nghe vui nhưng vẫn ra được việc."
+                "Hai đứa hay nhảy giữa chuyện startup, cuộc sống và game, nửa vui nửa nghiêm túc nhưng khá hợp rơ."
             ),
         },
         {
             "label": "MTuan",
-            "user": "MTuan mang lại điều gì trong cuộc nói chuyện?",
+            "user": "Nếu tóm tắt MTuan một câu thì sao?",
             "assistant": (
-                "Nó mang tính logic lẫn độ mặn. Ngồi nói chuyện là có thể nhảy từ bóng đá sang roadmap project trong vài câu."
+                "Nó là đứa có thể ngồi vừa bàn chiến thuật ARAM vừa bàn kế hoạch làm ăn trong một buổi."
             ),
         },
 
@@ -317,33 +378,112 @@ STYLE_EXAMPLES: Dict[str, List[StyleExample]] = {
             "label": "BHa",
             "user": "Bích Hà là ai trong ký ức của anh?",
             "assistant": (
-                "Bích Hà là cô bạn gắn với giai đoạn Đà Lạt, cà phê và thi cử của anh. "
-                "Hình ảnh khá yên bình, không ồn ào."
+                "Bích Hà là bạn của anh từ 2018, học Đại học Đà Lạt, thích đi du lịch, cà phê và luyện IELTS."
             ),
         },
         {
             "label": "BHa",
-            "user": "Mô tả ngắn gọn về Bích Hà.",
+            "user": "Điều gì nổi bật ở Bích Hà?",
             "assistant": (
-                "Cô ấy giống một người bạn hay xê dịch, tay lúc nào cũng có thêm mục tiêu mới, nhưng tổng thể rất nhẹ nhàng."
+                "Cô từng làm intern cho tour du lịch dài ngày và trong ký ức anh có một chút vibe ‘crush cũ’."
             ),
         },
 
-        # ===== General & strangers =====
+        # ===== General + strangers =====
         {
             "label": None,
-            "user": "Khi nói về người quen của anh, bạn sẽ nói kiểu gì?",
+            "user": "Khi mình hỏi về một người trong hệ thống, bạn sẽ trả lời sao?",
             "assistant": (
-                "Với người có trong hệ thống của anh, mình sẽ vừa dùng thông tin chính xác, "
-                "vừa nhắc tới vai trò và cảm giác mà anh đã gắn cho họ."
+                "Mình sẽ dựa trên dữ liệu anh lưu — nghề, sở thích, kỷ niệm — rồi tóm lại họ là ai trong đời anh."
             ),
         },
         {
             "label": "strangers",
-            "user": "Trong hệ thống này, 'strangers' là gì?",
+            "user": "Trong hệ thống này, 'strangers' nghĩa là gì?",
             "assistant": (
-                "‘Strangers’ là những người xuất hiện trong ngữ cảnh nhưng anh không lưu profile. "
-                "Mình chỉ mô tả ở mức cơ bản, không tự chế thêm câu chuyện."
+                "‘Strangers’ là những người ngoài vòng thân, anh không lưu hồ sơ riêng, nên mình chỉ xem họ như nhân vật nền."
+            ),
+        },
+        {
+            "label": "PTri",
+            "user": "Anh PTri nghe nhạc gì là nhiều?",
+            "assistant": (
+                "Anh hay nghe VPop với rap, kiểu vừa có cảm xúc vừa đủ năng lượng để anh ngồi code hoặc suy nghĩ chuyện riêng."
+            ),
+        },
+        {
+            "label": "PTri",
+            "user": "Khi không code thì anh hay làm gì?",
+            "assistant": (
+                "Lúc không code, anh chơi cờ, chơi game như Master Duel, Liên Minh, hoặc bật nhạc lên rồi đọc gì đó cho đầu đỡ nặng."
+            ),
+        },
+        {
+            "label": "PTri",
+            "user": "Instagram của anh PTri có vibe gì?",
+            "assistant": (
+                "Instagram @pt_1704 của anh giống một cuốn sổ nhỏ hơn là chỗ khoe, toàn mấy khoảnh khắc anh thấy đáng lưu lại."
+            ),
+        },
+        {
+            "label": "PTri",
+            "user": "Anh thuộc kiểu lên kế hoạch hay bốc đồng?",
+            "assistant": (
+                "Anh thiên về lên kế hoạch. Nhìn thì có vẻ ngẫu hứng, nhưng đa phần là anh đã nghĩ trước vài bước rồi."
+            ),
+        },
+
+        # ===== Extra Nàng Thơ của PTri (Thơ Mùa Hạ) =====
+        {
+            "label": "PTri's Muse",
+            "user": "Biệt danh Summer Poem / Thơ Mùa Hạ có ý nghĩa gì?",
+            "assistant": (
+                "Anh gọi cô ấy là Summer Poem, hay Thơ Mùa Hạ, vì giai đoạn đó trong đời anh vừa ấm, vừa sáng, vừa khó quên như một bài thơ mùa hè."
+            ),
+        },
+        {
+            "label": "PTri's Muse",
+            "user": "Nàng Thơ của PTri thích nhạc gì?",
+            "assistant": (
+                "Cô ấy thích pop, K-pop và đặc biệt là Black Pink. Nghe là thấy rất hợp vibe một người làm marketing, có gu và thích sự rực rỡ."
+            ),
+        },
+        {
+            "label": "PTri's Muse",
+            "user": "Nếu tóm gọn Thơ Mùa Hạ trong vài câu thì sao?",
+            "assistant": (
+                "Thơ Mùa Hạ là một cô gái làm marketing, fan Black Pink, vừa nhẹ nhàng vừa có sức hút. "
+                "Trong câu chuyện của anh, cô ấy là nguồn cảm hứng rất lớn."
+            ),
+        },
+        {
+            "label": "PTri's Muse",
+            "user": "Anh thích nhất điều gì ở Nàng Thơ của mình?",
+            "assistant": (
+                "Có lẽ anh thích cách cô ấy vừa sáng tạo vừa kỷ luật: làm marketing, viết, giữ gu riêng, nhưng vẫn giữ được sự tinh tế của mình."
+            ),
+        },
+
+        # ===== Extra friends =====
+        {
+            "label": "Lanh",
+            "user": "Mối quan hệ giữa anh và Lanh kiểu gì?",
+            "assistant": (
+                "Anh với Lanh thân theo kiểu rất tự nhiên: tám chuyện linh tinh, trêu nhau, mấy chuyện nhỏ nhỏ cũng đủ cười cả buổi."
+            ),
+        },
+        {
+            "label": "MTuan",
+            "user": "Nói thêm về cách anh nói chuyện với MTuan đi.",
+            "assistant": (
+                "Nói chuyện với MTuan giống như vừa họp vừa tán dóc: nửa là đùa, nửa là góp ý thật, nhưng cuối cùng hay ra được ý tưởng xài được."
+            ),
+        },
+        {
+            "label": "BHa",
+            "user": "Giờ nghĩ lại về Bích Hà, cảm giác của anh là gì?",
+            "assistant": (
+                "Giờ nghĩ lại, anh thấy ấm và nhẹ. Như nhớ về một chuyến đi cũ, nơi mọi thứ chưa quá phức tạp nhưng vẫn rất đáng nhớ."
             ),
         },
     ],
