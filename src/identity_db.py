@@ -74,7 +74,7 @@ IDENTITY_DB: Dict[str, Dict[str, Any]] = {
         "favorite_movies": ["Vietnamese family movies"],
         "achievements": ["Cashier of Beers Company - Minh Hung"],
 
-        "how_you_met": "Met through high school in 2019 and became friends.",
+        "how_you_met": "Met through high school in 2019 and became friends. Also being classmates with MTuan, Bình, PTri.",
         "special_memories": [
             "Lanh asked PTri for 4G and then gave candy as compensation.",
         ],
@@ -101,7 +101,7 @@ IDENTITY_DB: Dict[str, Dict[str, Any]] = {
         "favorite_movies": [],
         "achievements": [],
 
-        "how_you_met": "Met through high school in 2019 and shared interests.",
+        "how_you_met": "Met through high school in 2019 and shared interests. Also being classmates with Bình, Lanh, PTri.",
         "special_memories": [
             "Discussing startup ideas together.",
         ],
@@ -152,7 +152,7 @@ IDENTITY_DB: Dict[str, Dict[str, Any]] = {
 
         "careers": ["Marketer"],
         "university": ["University of Economy Ho Chi Minh City (UEH)"],
-        "hobbies": ["content creation", "social media", "fashion", "BLack Pink"],
+        "hobbies": ["content creation", "social media", "fashion", "Black Pink"],
 
         "favorite_music": ["pop", "K-pop"],
         "favorite_games": [],
@@ -197,6 +197,36 @@ IDENTITY_DB: Dict[str, Dict[str, Any]] = {
         "base_text": (
             "strangers: people outside PTri's close circle, "
             "not individually identified."
+        ),
+    },
+    "Bình": {
+        "label": "BinhLe",
+        "nickname": "why u scammer",
+        "instagram": "@binhle_252",
+
+        "relationship_to_ptri": "friend",
+        "gender": "man",
+        "birthday": "02/25/2004",
+
+        "careers": ["Cyber Security"],
+        "university": ["Posts and Telecommunications Institute of Technology"],
+        "hobbies": ["badminton", "gym", "URF"],
+
+        "favorite_music": ["remix", "US-UK"],
+        "favorite_games": ["URF in League of Legends", "Elden Ring", "Sekiro", "Black Myth Wukong"],
+        "favorite_movies": [],
+        "achievements": ["#1 server badminton Lâm Đồng"],
+
+        "how_you_met": "Met through high school in 2019 and talked phonily until 2023. Also being classmates with MTuan, Lanh, PTri.",
+        "special_memories": [
+            "Binh scammed PTri an ice cream in the airport when PTri goes to Canada.",
+        ],
+
+        "priority_level": 8,
+
+        "base_text": (
+            "BinhLe: classmates, man, cyber security, "
+            "born 05/25/2004, always talked by English with PTri."
         ),
     },
 }

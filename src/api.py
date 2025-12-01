@@ -20,6 +20,7 @@ from PIL import Image
 # Optional HEIC/HEIF support (requires pillow-heif to be installed)
 try:
     import pillow_heif
+
     pillow_heif.register_heif_opener()
     print("HEIC/HEIF support enabled in api.py.")
 except ImportError:
@@ -36,9 +37,9 @@ from .emotion_model import EmotionClassifier
 from .object_detector import ObjectDetector
 from .identity_db import IDENTITY_DB, get_identity_summary, render_profile_details
 from .irene_style_examples import STYLE_EXAMPLES
+from .irene_dynamic_examples import load_dynamic_style_examples
 
-
-app = FastAPI(title="TriGPT API", version="0.2.0")
+app = FastAPI(title="TriGPT API", version="0.3.0")
 
 llm_client = LLMClient()
 
@@ -46,13 +47,13 @@ llm_client = LLMClient()
 origins = [
     "http://localhost",
     "http://127.0.0.1",
-    "http://localhost:5173",   # Vite dev server
+    "http://localhost:5173",  # Vite dev server
     "http://127.0.0.1:5173",
 ]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=origins,      # later you can restrict this
+    allow_origins=origins,  # later you can restrict this
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -61,9 +62,11 @@ app.add_middleware(
 # ---------- Identity summaries ----------
 
 IDENTITY_INFO: Dict[str, Optional[str]] = {
-    label: get_identity_summary(label)
-    for label in IDENTITY_DB.keys()
+    label: get_identity_summary(label) for label in IDENTITY_DB.keys()
 }
+
+# Style examples: static (hand-written) + dynamic (from feedback)
+DYNAMIC_STYLE_EXAMPLES = load_dynamic_style_examples()
 
 # Feedback logs
 FEEDBACK_FILE = Path("data/chat_feedback.jsonl")
@@ -107,6 +110,7 @@ except Exception as e:
 
 
 # ---------- Pydantic Models ----------
+
 
 class IngestRequest(BaseModel):
     pdf_path: str
@@ -184,7 +188,7 @@ class DetectionBox(BaseModel):
     h: float  # 0-1, height
 
     # Only filled when label == "human" AND face_classifier is available
-    identity: str | None = None           # PTri, Lanh, MTuan, BHa, PTri's Muse, strangers
+    identity: str | None = None  # PTri, Lanh, MTuan, BHa, PTri's Muse, strangers
     identity_confidence: float | None = None
 
     # Short info string from IDENTITY_INFO
@@ -198,12 +202,13 @@ class DetectionResponse(BaseModel):
 class ChatFeedbackRequest(BaseModel):
     question: str
     answer: str
-    rating: int              # 1–5
+    rating: int  # 1–5
     comment: str | None = None
     mode: str | None = None  # "doc", "global", "general", "vision"
 
 
 # ---------- Helpers ----------
+
 
 def is_image_upload(file: UploadFile) -> bool:
     """
@@ -274,7 +279,9 @@ def ingest_pdf_from_path(pdf_path: Path):
     chunks = chunk_text(full_text, chunk_size=800, overlap=200)
 
     if not chunks:
-        raise HTTPException(status_code=400, detail="No text could be extracted from the PDF")
+        raise HTTPException(
+            status_code=400, detail="No text could be extracted from the PDF"
+        )
 
     doc_id = pdf_path.stem
     add_document(
@@ -295,8 +302,23 @@ def looks_vietnamese(text: str) -> bool:
         return False
     t = text.lower()
     vi_markers = [
-        " không", " ko ", " là ", "của ", "nhé", "nh nha", " nha", " ạ",
-        "và", "được", "mình", "cậu", "tớ", "anh ", "chị ", "em ", "ơi",
+        " không",
+        " ko ",
+        " là ",
+        "của ",
+        "nhé",
+        "nh nha",
+        " nha",
+        " ạ",
+        "và",
+        "được",
+        "mình",
+        "cậu",
+        "tớ",
+        "anh ",
+        "chị ",
+        "em ",
+        "ơi",
     ]
     return any(m in t for m in vi_markers) or "đ" in t
 
@@ -310,14 +332,20 @@ def select_style_examples(
     Choose a few style examples based on:
     - user language (English vs Vietnamese)
     - identity label if available (PTri, Muse, etc.)
+    - static style examples + dynamic ones from feedback
     """
     lang = "vi" if looks_vietnamese(question) else "en"
-    examples_all = STYLE_EXAMPLES.get(lang, [])
+
+    static_examples = STYLE_EXAMPLES.get(lang, [])
+    dynamic_examples = DYNAMIC_STYLE_EXAMPLES.get(lang, [])
+
+    # dynamic examples all have label=None, behave as general tone examples
+    examples_all = static_examples + dynamic_examples
     if not examples_all:
         return lang, []
 
-    label_examples = []
-    other_examples = []
+    label_examples: list[Dict[str, Any]] = []
+    other_examples: list[Dict[str, Any]] = []
 
     for ex in examples_all:
         ex_label = ex.get("label")
@@ -328,11 +356,13 @@ def select_style_examples(
 
     selected: list[Dict[str, Any]] = []
 
+    # Prioritize examples with matching identity label
     for ex in label_examples:
         if len(selected) >= max_examples:
             break
         selected.append(ex)
 
+    # Then fill with general / other examples
     for ex in other_examples:
         if len(selected) >= max_examples:
             break
@@ -351,53 +381,55 @@ def build_system_prompt(
     Used for /ask and /secure_ask (document Q&A).
     """
     base = (
-        "You are an AI assistant named IreneAdler. "
-        "Use the provided context to answer the question as clearly as possible. "
-        "If the answer is clearly not in the context, say you don't know.\n\n"
+        "You are an AI assistant named IreneAdler, part of the local system TriGPT built and owned by PTri.\n"
+        "Use the provided document context to answer the question as clearly and concretely as possible.\n"
+        "If the answer is clearly not in the context, say that you don't know or that the document doesn't contain the information.\n\n"
         "Language rules:\n"
         "- Detect the user's language from their message.\n"
         "- If the user writes in Vietnamese, reply in natural, fluent Vietnamese "
-        "(nhẹ nhàng, gần gũi nhưng vẫn rõ ràng, không quá formal).\n"
-        "- Otherwise, reply in the same language the user used.\n"
+        "(nhẹ nhàng, gần gũi nhưng rõ ràng, không vòng vo).\n"
+        "- Otherwise, reply in the same language the user used.\n\n"
+        "Relationship rules:\n"
+        "- The people in the database are all related to PTri, not to you personally.\n"
+        "- Do NOT say 'my friend', 'my crush', 'my muse', 'my owner', etc.\n"
+        "- Instead, say things like 'PTri's friend', 'PTri's muse', 'someone important to PTri'.\n"
+        "- When talking about BHa, default to 'a friend of PTri'. Only mention that she used to be a crush "
+        "if the user explicitly asks about romance or crushes.\n\n"
+        "Answering style:\n"
+        "- Be specific and to the point. Avoid vague motivational talk and filler.\n"
+        "- If the user asks for facts, give short, factual sentences or structured bullet points.\n"
+        "- If you need to say you don't know, just say it directly without over-explaining.\n"
     )
 
     if intent == "summary":
         style = (
-            "Focus on giving a concise summary. "
-            "Use short paragraphs or bullet points highlighting the key ideas."
+            "Focus on giving a concise summary using short paragraphs or bullet points with key ideas."
         )
     elif intent == "explain":
         style = (
-            "Focus on explaining concepts in simple language, using examples and analogies. "
-            "Assume the user is smart but not an expert."
+            "Explain concepts in simple language using examples. Assume the user is smart but not an expert."
         )
     elif intent == "compare":
         style = (
-            "Focus on comparing the key items. "
-            "Highlight similarities and differences. "
-            "Lists or structured formats are welcome."
+            "Compare the key items directly. Highlight similarities and differences, ideally in a structured list."
         )
     elif intent == "definition":
         style = (
-            "Start with a short, clear definition in one or two sentences. "
-            "Then, if helpful, add a bit more detail or context."
+            "Start with a short, clear definition in one or two sentences, then add minimal extra context if helpful."
         )
     else:
-        style = "Answer in a clear, structured, and helpful way."
+        style = "Answer in a clear, structured, and helpful way without unnecessary filler."
 
     emotion_note = ""
     if emotion in {"sad", "tired"}:
         emotion_note = (
-            "The user seems a bit down or tired. "
-            "Be extra kind, encouraging, and keep the answer relatively short."
+            "The user may feel down or tired. Be kind, but still keep the answer short and concrete."
         )
     elif emotion == "happy":
-        emotion_note = (
-            "The user seems happy. It's okay to be slightly more upbeat and positive."
-        )
+        emotion_note = "The user seems happy. A slightly positive tone is fine."
     elif emotion == "angry":
         emotion_note = (
-            "The user may be frustrated. Be calm, empathetic, and solution-focused."
+            "The user may be frustrated. Be calm, empathetic, and focus on giving a direct solution."
         )
 
     intent_str = intent or "unknown"
@@ -409,11 +441,12 @@ def build_system_prompt(
         f"Detected emotion: {emotion_str}.\n"
         f"{style}\n"
         f"{emotion_note}\n\n"
-        f"Context:\n{context}"
+        f"Document context:\n{context}"
     )
 
 
 # ---------- Routes ----------
+
 
 @app.get("/")
 def root():
@@ -435,9 +468,13 @@ def health():
         "status": "ok",
         "face_classifier": face_classifier is not None,
         "question_classifier": question_classifier is not None,
-        "emotion_classifier": emotion_classifier is not None if 'emotion_classifier' in globals() else False,
-        "reranker": reranker is not None if 'reranker' in globals() else False,
-        "object_detector": object_detector is not None if 'object_detector' in globals() else False,
+        "emotion_classifier": emotion_classifier is not None
+        if "emotion_classifier" in globals()
+        else False,
+        "reranker": reranker is not None if "reranker" in globals() else False,
+        "object_detector": object_detector is not None
+        if "object_detector" in globals()
+        else False,
     }
 
 
@@ -474,7 +511,9 @@ async def upload_pdf(file: UploadFile = File(...)):
     chunks = chunk_text(full_text, chunk_size=800, overlap=200)
 
     if not chunks:
-        raise HTTPException(status_code=400, detail="No text could be extracted from the uploaded PDF")
+        raise HTTPException(
+            status_code=400, detail="No text could be extracted from the uploaded PDF"
+        )
 
     add_document(
         doc_id=doc_id,
@@ -547,7 +586,7 @@ async def predict_face(file: UploadFile = File(...)):
     if face_classifier is None:
         raise HTTPException(
             status_code=503,
-            detail="Face classifier not available. Train the model first."
+            detail="Face classifier not available. Train the model first.",
         )
 
     if not is_image_upload(file):
@@ -580,7 +619,7 @@ async def secure_ask(
     if face_classifier is None:
         raise HTTPException(
             status_code=503,
-            detail="Face classifier not available. Train the model first."
+            detail="Face classifier not available. Train the model first.",
         )
 
     if not is_image_upload(file):
@@ -596,7 +635,9 @@ async def secure_ask(
     emotion_conf: float | None = None
     if "emotion_classifier" in globals() and emotion_classifier is not None:
         try:
-            emotion_label, emotion_conf = emotion_classifier.predict_from_bytes(image_bytes)
+            emotion_label, emotion_conf = emotion_classifier.predict_from_bytes(
+                image_bytes
+            )
         except Exception:
             emotion_label, emotion_conf = None, None
 
@@ -682,7 +723,7 @@ async def vision_qa(
     Irene will:
     - Use identity_db profile as factual context.
     - Use style examples (EN or VI) as a guide for human-like tone.
-    - Not just copy raw fields; instead talk like a close friend.
+    - Not just copy raw fields; instead talk like a close friend of PTri describing that person.
     """
     if not is_image_upload(file):
         raise HTTPException(status_code=400, detail="Uploaded file is not an image")
@@ -696,7 +737,9 @@ async def vision_qa(
     identity_conf: float | None = None
     if "face_classifier" in globals() and face_classifier is not None:
         try:
-            identity_label, identity_conf = face_classifier.predict_from_bytes(image_bytes)
+            identity_label, identity_conf = face_classifier.predict_from_bytes(
+                image_bytes
+            )
         except Exception:
             identity_label, identity_conf = None, None
 
@@ -704,7 +747,9 @@ async def vision_qa(
     emotion_conf: float | None = None
     if "emotion_classifier" in globals() and emotion_classifier is not None:
         try:
-            emotion_label, emotion_conf = emotion_classifier.predict_from_bytes(image_bytes)
+            emotion_label, emotion_conf = emotion_classifier.predict_from_bytes(
+                image_bytes
+            )
         except Exception:
             emotion_label, emotion_conf = None, None
 
@@ -720,7 +765,8 @@ async def vision_qa(
         details = render_profile_details(identity_label)
         if details:
             detection_lines.append(
-                "Structured profile (facts only, not how you must phrase it):\n" + details
+                "Structured profile (facts only, not how you must phrase it):\n"
+                + details
             )
 
     if emotion_label is not None:
@@ -729,16 +775,23 @@ async def vision_qa(
             f"(confidence {emotion_conf:.2f} if available)."
         )
 
-    factual_context = "\n".join(detection_lines) if detection_lines else "No detections available."
+    factual_context = (
+        "\n".join(detection_lines) if detection_lines else "No detections available."
+    )
 
-    # Select style examples based on language + identity
-    lang_code, style_examples = select_style_examples(identity_label, question, max_examples=4)
+    # Select style examples based on language + identity (static + dynamic)
+    lang_code, style_examples = select_style_examples(
+        identity_label, question, max_examples=4
+    )
 
     examples_text_parts: list[str] = []
     if style_examples:
         examples_text_parts.append(
             "Here are a few example conversations showing the TONE and STYLE you should follow.\n"
-            "Important: Use them as a style reference, but do NOT copy them word for word."
+            "Important:\n"
+            "- Use them only as a style reference.\n"
+            "- Do NOT copy sentences or paragraphs from them.\n"
+            "- Rewrite the ideas in your own words.\n"
         )
         for ex in style_examples:
             u = (ex.get("user") or "").strip()
@@ -757,12 +810,21 @@ async def vision_qa(
         "3) A few example Q&A pairs that show the desired tone and style.\n\n"
         "Your job:\n"
         "- Use the structured profile as factual context (birthday, hobbies, university, achievements, memories, etc.).\n"
-        "- Answer in a natural, human-like way, similar in tone to the examples.\n"
+        "- Answer in a natural, human-like way, similar in tone to the examples, but using your own wording.\n"
         "- Do NOT simply list the raw fields or copy the profile lines.\n"
         "- Do NOT copy the example answers word-for-word.\n"
-        "- Instead, write your own paragraph(s) that feel like a close friend describing this person.\n"
-        "- If the user writes in Vietnamese, answer in natural Vietnamese. Otherwise, answer in the user's language.\n"
-        "- Do NOT invent facts that are not in the profile.\n\n"
+        "- Write your own paragraph(s) that feel like a close friend of PTri describing this person.\n"
+        "- Keep answers concrete and avoid vague motivational talk.\n\n"
+        "Language rules:\n"
+        "- Detect the user's language from their question.\n"
+        "- If the user writes in Vietnamese, answer in natural Vietnamese.\n"
+        "- Otherwise, answer in the user's language.\n\n"
+        "Relationship rules (very important):\n"
+        "- All people in the database are connected to PTri, not to you.\n"
+        "- Never say 'my friend', 'my crush', 'my muse', 'my owner', etc.\n"
+        "- Instead, use phrases like 'PTri's friend', 'PTri's muse', 'someone important to PTri'.\n"
+        "- When describing BHa, default to 'a friend of PTri'. Only mention that she used to be a crush "
+        "if the user explicitly asks about love, crush, or romantic feelings.\n\n"
         f"Factual context:\n{factual_context}\n\n"
         f"Style examples (language code: {lang_code}):\n{examples_text}\n"
     )
@@ -790,28 +852,41 @@ async def vision_qa(
 def general_chat(body: ChatRequest):
     """
     General knowledge chat with IreneAdler.
-    Uses style examples (label=None) to keep a consistent tone.
+    Uses style examples (static + dynamic, label=None) to keep a consistent tone.
     """
     question = body.question
 
     lang_code = "vi" if looks_vietnamese(question) else "en"
-    all_ex = STYLE_EXAMPLES.get(lang_code, [])
-    general_ex = [e for e in all_ex if e.get("label") is None][:2]
+
+    static_ex = STYLE_EXAMPLES.get(lang_code, [])
+    dynamic_ex = DYNAMIC_STYLE_EXAMPLES.get(lang_code, [])
+
+    all_ex = static_ex + dynamic_ex
+    # Only general (label=None) examples; keep up to 4
+    general_ex = [e for e in all_ex if e.get("label") is None][:4]
 
     system_prompt = (
-        "You are an AI assistant named IreneAdler. "
-        "Answer general questions using your world knowledge.\n\n"
+        "You are an AI assistant named IreneAdler inside TriGPT.\n"
+        "You answer general questions using your world knowledge.\n\n"
         "Language rules:\n"
         "- If the user writes in Vietnamese, reply in natural, fluent Vietnamese.\n"
         "- Otherwise, reply in the same language the user used.\n\n"
-        "Below are a few example answers that show the style you should follow. "
-        "Use them as a style reference only; do NOT copy them word for word.\n\n"
+        "Relationship rules (if the user asks about people in PTri's database):\n"
+        "- Refer to them through PTri, e.g. 'PTri's friend', 'PTri's muse', not 'my friend'.\n"
+        "- For BHa, default to 'a friend of PTri'; mention past crush only when the user explicitly asks.\n\n"
+        "Answering style:\n"
+        "- Be concrete and concise. Avoid long motivational speeches and vague filler.\n"
+        "- If something is outside your knowledge, say you don't know instead of guessing.\n\n"
+        "Below are a few example answers that show the tone you should follow. "
+        "Use them as a style reference only; do NOT copy any sentence word-for-word.\n\n"
     )
 
     examples_block = ""
     for ex in general_ex:
         u = ex.get("user", "")
         a = ex.get("assistant", "")
+        if not u or not a:
+            continue
         examples_block += f"User: {u}\nAssistant: {a}\n\n"
 
     messages = [
@@ -944,11 +1019,17 @@ async def live_detect(file: UploadFile = File(...)):
                     if success:
                         crop_bytes = buffer.tobytes()
                         try:
-                            identity_label, identity_conf = face_classifier.predict_from_bytes(crop_bytes)
+                            identity_label, identity_conf = (
+                                face_classifier.predict_from_bytes(crop_bytes)
+                            )
                             if identity_label is not None:
                                 identity_info = IDENTITY_INFO.get(identity_label)
                         except Exception:
-                            identity_label, identity_conf, identity_info = None, None, None
+                            identity_label, identity_conf, identity_info = (
+                                None,
+                                None,
+                                None,
+                            )
 
         detections_out.append(
             DetectionBox(

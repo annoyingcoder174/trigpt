@@ -26,34 +26,10 @@ function App() {
   const [mode, setMode] = useState(MODES.DOC);
 
   const [conversations, setConversations] = useState({
-    [MODES.DOC]: [
-      {
-        role: "assistant",
-        content:
-          "Hi, I'm IreneAdler. Upload a PDF on the left, select it, and ask me anything about that document.",
-      },
-    ],
-    [MODES.GLOBAL]: [
-      {
-        role: "assistant",
-        content:
-          "Hi, I'm IreneAdler. Ask anything across all your indexed documents.",
-      },
-    ],
-    [MODES.GENERAL]: [
-      {
-        role: "assistant",
-        content:
-          "Hi, I'm IreneAdler. This is general chat. Ask me anything, not just about your PDFs.",
-      },
-    ],
-    [MODES.VISION]: [
-      {
-        role: "assistant",
-        content:
-          "Hi, I'm IreneAdler. Upload or capture an image, then:\n- Click \"Analyze objects & faces\" to see detections\n- Or ask a question about the image.",
-      },
-    ],
+    [MODES.DOC]: [],
+    [MODES.GLOBAL]: [],
+    [MODES.GENERAL]: [],
+    [MODES.VISION]: [],
   });
 
   const [input, setInput] = useState("");
@@ -1253,11 +1229,17 @@ function MessageBubble({
       }
     >
       <div className="avatar-circle">{isUser ? "😼" : "🤖"}</div>
+
       <div
         className={
           "message-bubble " +
           (isUser ? "message-bubble-user" : "message-bubble-assistant")
         }
+        // ⬇️ Thinner bubble: less padding + normal max width
+        style={{
+          padding: "0.1rem 0.6rem",
+          maxWidth: "70%",
+        }}
       >
         {message.content.split("\n").map((line, i) => (
           <p key={i}>{line}</p>
@@ -1342,5 +1324,6 @@ function MessageBubble({
     </div>
   );
 }
+
 
 export default App;

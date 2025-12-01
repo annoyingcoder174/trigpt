@@ -69,8 +69,8 @@ With venv active and at project root:
 From project root (with venv active):
 
     cd C:\path\to\trigpt
-    python -m venv .venv
-    .\.venv\Scripts\activate
+   python3 -m venv .venv
+   source .venv/bin/activate
 
     uvicorn src.api:app --reload
 
