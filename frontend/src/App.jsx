@@ -16,6 +16,10 @@ const IDENTITY_OPTIONS = [
   "BHa",
   "PTri's Muse",
   "strangers",
+  "HThuong",
+  "BinhLe",
+  "XViet",
+  "KNguyen",
 ];
 
 function App() {
