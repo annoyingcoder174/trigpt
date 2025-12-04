@@ -182,7 +182,7 @@ IDENTITY_DB: Dict[str, Dict[str, Any]] = {
 
     "MTuan": {
         "label": "MTuan",
-        "nickname": "Tuan",
+        "nickname": "Tuấn Dế",
         "instagram": "@mih.naut",
 
         "relationship_to_ptri": "friend",
