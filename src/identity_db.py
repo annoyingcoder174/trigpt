@@ -53,6 +53,54 @@ def _compute_age_from_date_str(birthday_str: str) -> Optional[int]:
 # ================= MAIN DATABASE ===================
 
 IDENTITY_DB: Dict[str, Dict[str, Any]] = {
+    "PTri's Muse": {
+        "label": "Hạ Thi",
+        "nickname": "Summer Poem",
+        "instagram": "@thomuaha",
+
+        "relationship_to_ptri": "very special person!",
+        "gender": "girl",
+        "birthday": "May 2nd, 2004",
+
+        "careers": ["Marketer"],
+        "university": ["University of Economy Ho Chi Minh City (UEH)"],
+        "hobbies": ["content creation", "social media", "fashion", "Black Pink"],
+
+        "favorite_music": ["pop", "K-pop"],
+        "favorite_games": [],
+        "favorite_movies": ["romantic series", "Korean dramas"],
+        "achievements": [
+            "Queen of Thang Long High School",
+            "Staff in Hakuhodo Vietnam",
+            "Content creater in ELLE Vietnam",
+        ],
+
+        "how_you_met": "Met at Loc Minh IELTS Center and gradually became very special to PTri.",
+        "special_memories": [
+            "Considered the first serious date in PTri's life.",
+        ],
+
+        "priority_level": 10,
+
+        "base_text": (
+            "PTri's Muse: a very special person to PTri, girl, marketer, "
+            "born 05/02/2004, Queen of Thang Long High School."
+        ),
+        # You can fill these with longer free-text facts if you want
+        "personality": "out-going",
+        "fun_facts": ["#2 Literature in Lam Dong Province", "lost connection with PTri"],
+        "relationship_notes": "strangers now",
+
+        "aliases": [
+            "Nàng thơ",
+            "nàng thơ",
+            "nàng thơ của ptri",
+            "Nàng Thơ của PTri",
+            "Summer Poem",
+            "Thơ Mùa Hạ",
+        ],
+    },
+
     "PTri": {
         "label": "PTri",
         "nickname": "Tri",
@@ -60,16 +108,25 @@ IDENTITY_DB: Dict[str, Dict[str, Any]] = {
 
         "relationship_to_ptri": "self / owner (IreneAdler's boss)",
         "gender": "man",
-        "birthday": "04/17/2004",
+        "birthday": "April 17th, 2004",
 
         "careers": ["AI Engineer"],
         "university": "University of London",
         "hobbies": ["chess", "coding", "reading", "gaming"],
 
-        "favorite_music": ["VPop", "rap"],
+        "favorite_music": ["VPop", "rap", "US-UK", "K-Pop"],
         "favorite_games": ["chess", "Yu-Gi-Oh! Master Duel", "League of Legends"],
         "favorite_movies": ["Perfect Blue"],
-        "achievements": ["Chess Master", "Top Duelist", "#1 chess server 12a12", "TriGPT owner"],
+        "achievements": [
+            "Chess Master",
+            "Top Rating Duelist",
+            "#1 chess server 12a12",
+            "TriGPT owner",
+            "Canada international student",
+            "IELTS 7.0 (Reading: 7.0, Listening: 7.5, Writing: 7.0, Speaking: 6.5)",
+            "IBM AI Developer, Engineer",
+            "Software Engineer at ImageSource Inc., Washington, U.S"
+        ],
 
         "how_you_met": "N/A (this is PTri himself, owner of the system).",
         "special_memories": [
@@ -79,10 +136,15 @@ IDENTITY_DB: Dict[str, Dict[str, Any]] = {
         "priority_level": 10,
 
         "base_text": (
-            "PTri: AI Engineer, man, Chess Master, born 17/04/2004, "
+            "PTri: AI Engineer, man, Chess Master, born 04/17/2004, "
             "owner of this system and IreneAdler's boss."
         ),
+
+        "personality": "introvert, overthinking, creative, progressive",
+        "fun_facts": [],
+        "relationship_notes": "",
     },
+
     "Lanh": {
         "label": "Lanh",
         "nickname": "Lanh",
@@ -90,29 +152,34 @@ IDENTITY_DB: Dict[str, Dict[str, Any]] = {
 
         "relationship_to_ptri": "friend",
         "gender": "girl",
-        "birthday": "05/01/2004",
+        "birthday": "May 1st,2004",
 
-        "careers": ["Cashier"],
+        "careers": ["Accountant"],
         "university": ["Open University of Ho Chi Minh City"],
         "hobbies": ["hanging out with friends", "music"],
 
         "favorite_music": ["V-pop", "romantic ballads"],
         "favorite_games": ["Valorant"],
         "favorite_movies": ["Vietnamese family movies"],
-        "achievements": ["Cashier of Beers Company - Minh Hung"],
+        "achievements": ["Accountant of Beers Company - Minh Hung"],
 
         "how_you_met": (
             "Met through high school in 2019 and became friends. "
-            "Also classmates with Xuân Việt, Khánh Nguyên, MTuan, Bình, and PTri."
+            "Also classmates with Xuân Việt, Khánh Nguyên, MTuan, Bình, PTrinh and PTri."
         ),
         "special_memories": [
             "Once asked PTri for 4G and then gave candy as compensation, turning into a shared joke.",
         ],
 
-        "priority_level": 8,
+        "priority_level": 7,
 
         "base_text": "Lanh: PTri's friend, girl, cashier, born 01/05/2004.",
+
+        "personality": "funny, sensitive",
+        "fun_facts": ["has many boys/men flirt and chase"],
+        "relationship_notes": "close friend",
     },
+
     "MTuan": {
         "label": "MTuan",
         "nickname": "Tuan",
@@ -120,7 +187,7 @@ IDENTITY_DB: Dict[str, Dict[str, Any]] = {
 
         "relationship_to_ptri": "friend",
         "gender": "man",
-        "birthday": "12/17/2004",
+        "birthday": "December 17th, 2004",
 
         "careers": ["Business Analyst"],
         "university": ["FPT University"],
@@ -133,7 +200,7 @@ IDENTITY_DB: Dict[str, Dict[str, Any]] = {
 
         "how_you_met": (
             "Met through high school in 2019 and bonded over shared interests. "
-            "Also classmates with Xuân Việt, Khánh Nguyên, Bình, Lanh, and PTri."
+            "Also classmates with Xuân Việt, Khánh Nguyên, Bình, Lanh, PTrinh and PTri."
         ),
         "special_memories": [
             "Often discussed startup ideas together and mixed them with game talk.",
@@ -144,7 +211,12 @@ IDENTITY_DB: Dict[str, Dict[str, Any]] = {
         "base_text": (
             "MTuan: PTri's friend, man, Business Analyst direction, born 17/12/2004."
         ),
+
+        "personality": "childish",
+        "fun_facts": ["good at thinking in chess", "bad at AD Carry role in LOL"],
+        "relationship_notes": "work mate",
     },
+
     "BHa": {
         "label": "BHa",
         "nickname": "Bích Hà",
@@ -152,7 +224,7 @@ IDENTITY_DB: Dict[str, Dict[str, Any]] = {
 
         "relationship_to_ptri": "friend",
         "gender": "girl",
-        "birthday": "02/04/2004",
+        "birthday": "February 4th, 2004",
 
         "careers": ["Tour Guider"],
         "university": ["Da Lat University"],
@@ -168,46 +240,17 @@ IDENTITY_DB: Dict[str, Dict[str, Any]] = {
             "At one time, Bích Hà was an old crush in PTri's memory.",
         ],
 
-        "priority_level": 6,
+        "priority_level": 8,
 
         "base_text": (
             "BHa: PTri's friend, girl, tour guider, born 04/02/2004."
         ),
+
+        "personality": "funny, out-going, diligent",
+        "fun_facts": ["used to hate PTri so bad"],
+        "relationship_notes": "close friend",
     },
-    "PTri's Muse": {
-        "label": "PTri's Muse",
-        "nickname": "Summer Poem",
-        "instagram": "@thomuaha",
 
-        "relationship_to_ptri": "very special person!",
-        "gender": "girl",
-        "birthday": "05/02/2004",
-
-        "careers": ["Marketer"],
-        "university": ["University of Economy Ho Chi Minh City (UEH)"],
-        "hobbies": ["content creation", "social media", "fashion", "Black Pink"],
-
-        "favorite_music": ["pop", "K-pop"],
-        "favorite_games": [],
-        "favorite_movies": ["romantic series", "Korean dramas"],
-        "achievements": [
-            "Queen of Thang Long High School",
-            "Employee in Hakuhodo",
-            "Writer in ELLE Vietnam",
-        ],
-
-        "how_you_met": "Met at Loc Minh IELTS Center and gradually became very special to PTri.",
-        "special_memories": [
-            "Considered the first serious date period in PTri's life.",
-        ],
-
-        "priority_level": 10,
-
-        "base_text": (
-            "PTri's Muse: a very special person to PTri, girl, marketer, "
-            "born 02/05/2004, Queen of Thang Long High School."
-        ),
-    },
     "strangers": {
         "label": "strangers",
         "nickname": None,
@@ -235,7 +278,12 @@ IDENTITY_DB: Dict[str, Dict[str, Any]] = {
             "strangers: people outside PTri's close circle, "
             "not individually identified."
         ),
+
+        "personality": "",
+        "fun_facts": [],
+        "relationship_notes": "",
     },
+
     "Bình": {
         "label": "BinhLe",
         "nickname": "why u scammer",
@@ -243,7 +291,7 @@ IDENTITY_DB: Dict[str, Dict[str, Any]] = {
 
         "relationship_to_ptri": "friend",
         "gender": "man",
-        "birthday": "02/25/2004",
+        "birthday": "February 25th, 2004",
 
         "careers": ["Cyber Security"],
         "university": ["Posts and Telecommunications Institute of Technology"],
@@ -261,7 +309,7 @@ IDENTITY_DB: Dict[str, Dict[str, Any]] = {
 
         "how_you_met": (
             "Met through high school in 2019 and kept in touch, often talking in a playful, phonily way until 2023. "
-            "Also classmates with MTuan, Xuân Việt, Khánh Nguyên, Lanh, and PTri."
+            "Also classmates with MTuan, Xuân Việt, Khánh Nguyên, Lanh, PTrinh and PTri."
         ),
         "special_memories": [
             "Binh once 'scammed' PTri an ice cream at the airport when PTri was about to go to Canada, which became a shared joke.",
@@ -273,7 +321,12 @@ IDENTITY_DB: Dict[str, Dict[str, Any]] = {
             "BinhLe: PTri's friend and classmate, man, cyber security direction, "
             "born 25/02/2004, usually speaks English with PTri."
         ),
+
+        "personality": "introvert, free-thinking",
+        "fun_facts": ["love badminton than even his own cyber security major"],
+        "relationship_notes": "English friend",
     },
+
     "Hoài Thương": {
         "label": "HThuong",
         "nickname": "na hoài",
@@ -281,7 +334,7 @@ IDENTITY_DB: Dict[str, Dict[str, Any]] = {
 
         "relationship_to_ptri": "friend",
         "gender": "girl",
-        "birthday": "07/17/2004",
+        "birthday": "July 17th, 2004",
 
         "careers": ["International Business"],
         "university": ["Ho Chi Minh City University of Economics and Finance (UEF)"],
@@ -293,7 +346,7 @@ IDENTITY_DB: Dict[str, Dict[str, Any]] = {
         "achievements": ["being a model for a fashion studio"],
 
         "how_you_met": (
-            "Was a classmate in the extra class of Mrs Ha in 2016, then a classmate again in grade 9 in 2018. "
+            "Was a classmate in the extra class of Mrs Hà in 2016, then a classmate again in grade 9 in 2018. "
             "Stayed in touch afterwards as a deep-talking friend and emotional support for PTri, especially when he felt isolated in Canada."
         ),
         "special_memories": [
@@ -306,7 +359,12 @@ IDENTITY_DB: Dict[str, Dict[str, Any]] = {
             "HThuong: old classmate and deep-talking mate of PTri, girl, International Business, model, "
             "born 17/07/2004, studying at UEF."
         ),
+
+        "personality": "out-going, funny, caring",
+        "fun_facts": ["used to be a rice paper seller in grade 10, 11"],
+        "relationship_notes": "deep-talking mate",
     },
+
     "Xuân Việt": {
         "label": "XViet",
         "nickname": "Canyon 2k4",
@@ -314,7 +372,7 @@ IDENTITY_DB: Dict[str, Dict[str, Any]] = {
 
         "relationship_to_ptri": "friend",
         "gender": "man",
-        "birthday": "01/26/2004",
+        "birthday": "January 26th, 2004",
 
         "careers": ["Local Business (Soy Milk)"],
         "university": [""],
@@ -328,7 +386,7 @@ IDENTITY_DB: Dict[str, Dict[str, Any]] = {
         "how_you_met": (
             "Met in 2016 in Nguyen Du Secondary School's Rubik community. "
             "Later became high school classmates in 2019 and deskmates with PTri. "
-            "Also classmates with Khánh Nguyên, MTuan, BinhLe, Lanh, and PTri. "
+            "Also classmates with Khánh Nguyên, MTuan, BinhLe, Lanh, PTrinh and PTri. "
             "Was also PTri's main chess rival in high school."
         ),
         "special_memories": [
@@ -341,7 +399,12 @@ IDENTITY_DB: Dict[str, Dict[str, Any]] = {
             "XViet: PTri's classmate, chessmate and deskmate, man, runs a well-known soy milk business in Da Lat City (Dung Béo), "
             "born 26/01/2004, known as the wealthiest guy in 12a12."
         ),
+
+        "personality": "talkative, funny, out-going",
+        "fun_facts": ["The only one once beating PTri in a chess game"],
+        "relationship_notes": "close friend",
     },
+
     "Khánh Nguyên": {
         "label": "KNguyen",
         "nickname": "Sakura Đao",
@@ -349,7 +412,7 @@ IDENTITY_DB: Dict[str, Dict[str, Any]] = {
 
         "relationship_to_ptri": "friend",
         "gender": "girl",
-        "birthday": "10/09/2004",
+        "birthday": "October 9th, 2004",
 
         "careers": ["Bartender"],
         "university": ["Da Lat University"],
@@ -362,7 +425,7 @@ IDENTITY_DB: Dict[str, Dict[str, Any]] = {
 
         "how_you_met": (
             "High school classmates in 2019, then deskmates in 2020 and 2021. "
-            "Also classmates with Xuân Việt, BinhLe, MTuan, Lanh, and PTri."
+            "Also classmates with Xuân Việt, BinhLe, MTuan, Lanh, PTrinh and PTri."
         ),
         "special_memories": [
             "Frequently asked PTri for tissues so often that almost all of his tissues were used by her. "
@@ -375,6 +438,46 @@ IDENTITY_DB: Dict[str, Dict[str, Any]] = {
             "KNguyen: PTri's classmate and deskmate, girl, bartender, "
             "born 09/10/2004, has a strong startup mindset."
         ),
+
+        "personality": "out-going, funny, talkative",
+        "fun_facts": ["used to hate PTri at first"],
+        "relationship_notes": "old deskmate",
+    },
+    "PTrinh": {
+        "label": "Phương Trinh",
+        "nickname": "Chin",
+        "instagram": "@chinuowo",
+
+        "relationship_to_ptri": "friend",
+        "gender": "girl",
+        "birthday": "August 9th, 2004",
+
+        "careers": ["Investor"],
+        "university": ["Ho Chi Minh City University of Economics and Finance - UEF"],
+        "hobbies": ["coffee", "badminton", "hang out"],
+
+        "favorite_music": ["badtrip"],
+        "favorite_games": [],
+        "favorite_movies": [],
+        "achievements": ["internship in trading company"],
+
+        "how_you_met": (
+            "Met through high school in 2019. 7 years of exam-mates in secondary school and high school."
+            "Also classmates with Xuân Việt, Khánh Nguyên, Bình, Lanh, MTuan and PTri."
+        ),
+        "special_memories": [
+            "PTri's love strategist in high school. PTrinh cried when PTri first went to Canada for studying abroad.",
+        ],
+
+        "priority_level": 8,
+
+        "base_text": (
+            "PTrinh: PTri's friend, girl, investor, trader, born 09/08/2004."
+        ),
+
+        "personality": "mature, cool",
+        "fun_facts": ["PTri is known by PTrinh's parents and in reverse too."],
+        "relationship_notes": "deep-talking mate",
     },
 }
 
@@ -402,7 +505,7 @@ def get_identity_summary(identity_key: str) -> Optional[str]:
     This is used in /live_detect as 'identity_info'.
 
     It must NOT speak as Irene (no 'I', 'me', 'my'); just describe the person
-    relative to PTri.
+    relative to PTri. Priority level is kept internal and not verbalised.
     """
     info = IDENTITY_DB.get(identity_key)
     if not info:
@@ -413,7 +516,6 @@ def get_identity_summary(identity_key: str) -> Optional[str]:
     rel = info.get("relationship_to_ptri") or "connection"
     careers = info.get("careers") or []
     university = info.get("university")
-    priority = info.get("priority_level", 5)
 
     # Normalize university into string
     if isinstance(university, list):
@@ -428,7 +530,6 @@ def get_identity_summary(identity_key: str) -> Optional[str]:
         pieces.append(f"career: {career_str}")
     if uni_str:
         pieces.append(f"university: {uni_str}")
-    pieces.append(f"priority {priority}/10 in PTri's life")
 
     return " | ".join(pieces)
 
@@ -471,12 +572,31 @@ def render_profile_details(identity_label: str) -> str:
     achievements = info.get("achievements") or []
     how_you_met = info.get("how_you_met")
     special_memories = info.get("special_memories") or []
-    priority = info.get("priority_level", 5)
+    personality = info.get("personality")
+    fun_facts = info.get("fun_facts") or []
+    relationship_notes = info.get("relationship_notes")
+    gender = info.get("gender")  # ⬅️ for pronoun rules
+    # priority = info.get("priority_level", 5)  # internal only
 
     lines: List[str] = []
     lines.append(f"Name key: {display_name}")
     lines.append(f"Profile label: {label}")
     lines.append(f"Relationship to PTri: {rel}")
+
+    # Explicit gender + pronoun guidance so Irene stops mixing 'anh ấy' / 'cô ấy'
+    if gender == "man":
+        lines.append(
+            "Gender: male. In Vietnamese, ALWAYS use male pronouns for this person "
+            "(for example: 'anh ấy', 'cậu ấy') and NEVER use female ones like "
+            "'cô ấy', 'chị ấy'."
+        )
+    elif gender == "girl":
+        lines.append(
+            "Gender: female. In Vietnamese, ALWAYS use female pronouns for this person "
+            "(for example: 'cô ấy', 'chị ấy') and NEVER use male ones like "
+            "'anh ấy', 'cậu ấy'."
+        )
+
     if nickname:
         lines.append(f"Nickname: {nickname}")
     if instagram:
@@ -510,6 +630,15 @@ def render_profile_details(identity_label: str) -> str:
         for m in special_memories:
             lines.append(f"- {m}")
 
-    lines.append(f"Priority level in PTri's life: {priority}/10")
+    if personality:
+        lines.append(f"Personality description: {personality}")
+    if fun_facts:
+        lines.append("Fun facts / small details:")
+        for f in fun_facts:
+            lines.append(f"- {f}")
+    if relationship_notes:
+        lines.append(f"Relationship notes: {relationship_notes}")
+
+    # Priority level is kept internal and not verbalised.
 
     return "\n".join(lines)

@@ -1,660 +1,582 @@
-# src/irene_style_examples.py
-
 from __future__ import annotations
 from typing import Dict, List, TypedDict, Optional
 
 
 class StyleExample(TypedDict, total=False):
-    label: Optional[str]  # PTri, Lanh, PTri's Muse, etc. or None for general
+    label: Optional[str]  # PTri, PTri's Muse, Lanh, MTuan, etc., or None / "strangers"
     user: str
     assistant: str
 
 
 STYLE_EXAMPLES: Dict[str, List[StyleExample]] = {
-    # ---------------- ENGLISH STYLE EXAMPLES ----------------
+    # =============== ENGLISH EXAMPLES ===============
     "en": [
-        # ===== PTri =====
+        # ---------- PTri ----------
         {
             "label": "PTri",
-            "user": "Who is PTri?",
+            "user": "Who is PTri in real life?",
             "assistant": (
-                "PTri is the owner of this whole system, an AI engineer born in 2004 who built Irene and TriGPT as his own local AI lab."
+                "PTri is the owner of this whole system: an AI engineer born in 2004, "
+                "Chess Master, Canada international student and now a software engineer "
+                "working in the US. He’s the one who built TriGPT and IreneAdler."
             ),
         },
         {
             "label": "PTri",
-            "user": "Describe PTri in a few words.",
+            "user": "What are some of PTri’s achievements?",
             "assistant": (
-                "PTri is a chess-playing, code-writing AI engineer who treats his PC like a mini research lab for experiments and personal projects."
+                "He’s a Chess Master, a Top Rating Duelist, '#1 chess server 12a12', "
+                "an IBM AI Engineer and now a software engineer at ImageSource Inc. in Washington. "
+                "On top of that he studied in Canada and scored IELTS 7.0 overall."
             ),
         },
         {
             "label": "PTri",
-            "user": "What are PTri's main interests?",
+            "user": "How would you describe PTri’s personality and hobbies?",
             "assistant": (
-                "PTri is into chess, coding, reading, and gaming—anything that lets him think deeply, optimize things, or compete a bit."
-            ),
-        },
-        {
-            "label": "PTri",
-            "user": "What has PTri achieved so far?",
-            "assistant": (
-                "PTri is a Chess Master, Top Duelist in Yu-Gi-Oh! Master Duel, #1 chess server of class 12A12, and the one who designed and runs TriGPT."
-            ),
-        },
-        {
-            "label": "PTri",
-            "user": "Where did PTri study?",
-            "assistant": (
-                "PTri studied at the University of London and then used that foundation to build his own AI projects and this local lab."
-            ),
-        },
-        {
-            "label": "PTri",
-            "user": "What is your relationship with PTri?",
-            "assistant": (
-                "In this system, IreneAdler is an AI assistant created and controlled by PTri, so the way Irene talks and prioritizes things follows his design."
+                "He’s introverted and overthinks a lot, but he’s also creative and very progressive. "
+                "He relaxes by playing chess, coding random projects, reading, and gaming "
+                "like Master Duel or League of Legends."
             ),
         },
 
-        # ===== PTri's Muse / Summer Poem =====
+        # ---------- PTri's Muse (Hạ Thi / Summer Poem) ----------
         {
             "label": "PTri's Muse",
             "user": "Who is PTri's Muse?",
             "assistant": (
-                "PTri's Muse is a marketer from UEH who works with content and fashion, and is a very special person in his story."
+                "PTri’s Muse is Hạ Thi, a marketer from UEH. She’s into content creation, "
+                "social media, fashion and BLACKPINK, and she used to be a very special person in his life."
             ),
         },
         {
             "label": "PTri's Muse",
-            "user": "What has PTri's Muse done?",
+            "user": "What has PTri's Muse achieved so far?",
             "assistant": (
-                "She was Queen of Thang Long High School, worked at Hakuhodo, and wrote for ELLE Vietnam before continuing her marketing journey."
+                "She was Queen of Thang Long High School, worked at Hakuhodo Vietnam and wrote for ELLE Vietnam. "
+                "She also placed #2 in Literature in Lâm Đồng Province, which fits her Summer Poem vibe."
             ),
         },
         {
             "label": "PTri's Muse",
-            "user": "How does she affect PTri?",
+            "user": "What is their relationship like now?",
             "assistant": (
-                "She represents a bright ‘summer’ phase for PTri and quietly pushes him to improve himself and take his goals more seriously."
-            ),
-        },
-        {
-            "label": "PTri's Muse",
-            "user": "Where did PTri meet his Muse?",
-            "assistant": (
-                "PTri met his Muse at Loc Minh IELTS Center, and from there she gradually became a very special person to him."
+                "Right now they’ve basically lost contact, so in reality they feel like strangers, "
+                "but in PTri’s story she’s still remembered as his first serious date and a bright 'summer' chapter."
             ),
         },
 
-        # ===== Lanh =====
+        # ---------- Lanh ----------
         {
             "label": "Lanh",
             "user": "Who is Lanh to PTri?",
             "assistant": (
-                "Lanh is one of PTri's close high school friends, a girl working as a cashier and studying at the Open University of Ho Chi Minh City."
+                "Lanh is a high school friend of PTri who studied at the Open University in Ho Chi Minh City "
+                "and works in accounting. She sits in the friend zone as a close, familiar face in his 12a12 memories."
             ),
         },
         {
             "label": "Lanh",
-            "user": "What do you remember most about Lanh?",
+            "user": "Tell me a typical story about Lanh.",
             "assistant": (
-                "A classic memory is Lanh asking PTri for 4G and then paying him back with candy, which turned into a small running joke between them."
+                "A signature story is when she asked PTri for 4G and paid him back with candy. "
+                "It sounds small, but it turned into a long-running joke between them."
             ),
         },
         {
             "label": "Lanh",
-            "user": "What is Lanh's general vibe?",
+            "user": "How is Lanh’s personality?",
             "assistant": (
-                "Lanh has easygoing, slightly chaotic friend energy—simple hangouts and random jokes with her become long-term memories in PTri’s mind."
+                "She’s funny and a bit sensitive, the kind of girl that many guys chase, "
+                "but her dynamic with PTri is just close-friend energy, nothing too dramatic."
             ),
         },
 
-        # ===== MTuan =====
+        # ---------- MTuan ----------
         {
             "label": "MTuan",
             "user": "Who is MTuan?",
             "assistant": (
-                "MTuan is one of PTri’s close male friends, a Business Analyst from FPT University who likes football and ARAM in League of Legends."
+                "MTuan is one of PTri’s close friends from high school, following a Business Analyst direction "
+                "after FPT University. He likes football and spends a lot of time in ARAM in League."
             ),
         },
         {
             "label": "MTuan",
-            "user": "What do PTri and MTuan usually talk about?",
+            "user": "How do PTri and MTuan usually talk?",
             "assistant": (
-                "PTri and MTuan often jump between work, future plans, and games, so their conversations feel half brainstorming, half banter."
+                "Their conversations jump between startup ideas and game meta. "
+                "It’s half banter, half 'what if we actually build this' type talk."
             ),
         },
         {
             "label": "MTuan",
-            "user": "How would you sum up MTuan in one line?",
+            "user": "How would you summarize MTuan?",
             "assistant": (
-                "MTuan is the friend who can mix an ARAM match, startup ideas, and life plans into the same late-night chat with PTri."
+                "He’s a little childish but clever—good at thinking in chess and strategy, "
+                "but surprisingly bad when he plays AD Carry in League."
             ),
         },
 
-        # ===== BHa =====
+        # ---------- BHa ----------
         {
             "label": "BHa",
-            "user": "Who is BHa to PTri?",
+            "user": "Who is Bích Hà to PTri?",
             "assistant": (
-                "Bích Hà is a friend of PTri from around 2018, a tour guide type who studied at Da Lat University and likes traveling, coffee shops, and IELTS."
+                "Bích Hà is a friend from around 2018 who studied at Da Lat University and works as a tour guide. "
+                "She likes traveling, coffee shops and grinding IELTS."
             ),
         },
         {
             "label": "BHa",
-            "user": "What stands out about BHa?",
+            "user": "What’s special about PTri’s memory of Bích Hà?",
             "assistant": (
-                "She once interned for long vacation tours and, in PTri’s memory, carries a calm, travel-loving and slightly nostalgic vibe."
+                "She actually used to hate PTri quite a lot, then later they became friends. "
+                "At one point she was an old crush in his memory, now more like a warm, funny friend."
+            ),
+        },
+        {
+            "label": "BHa",
+            "user": "Describe her personality.",
+            "assistant": (
+                "She’s funny, outgoing and diligent — the type who’s always moving, working tours or planning the next trip."
             ),
         },
 
-        # ===== BinhLe =====
+        # ---------- BinhLe ----------
         {
             "label": "BinhLe",
-            "user": "Who is Binh to PTri?",
+            "user": "Who is BinhLe?",
             "assistant": (
-                "BinhLe is one of PTri’s high school friends, a cyber security guy who went on to study at the Posts and Telecommunications Institute of Technology."
+                "BinhLe is a high school classmate and friend of PTri who went into cyber security at PTIT. "
+                "He’s also #1 badminton server in Lâm Đồng and very serious about the sport."
             ),
         },
         {
             "label": "BinhLe",
-            "user": "What do you remember most about BinhLe?",
+            "user": "What is the famous 'ice cream' story with Binh?",
             "assistant": (
-                "A famous story is Binh ‘scamming’ PTri an ice cream at the airport before PTri flew to Canada, which became a long-running joke between them."
+                "Right before PTri flew to Canada, Binh 'scammed' him an ice cream at the airport. "
+                "It became their inside joke and fits his playful, free-thinking vibe."
             ),
         },
         {
             "label": "BinhLe",
-            "user": "How would you describe BinhLe's vibe?",
+            "user": "How do PTri and Binh usually communicate?",
             "assistant": (
-                "BinhLe has sporty-gamer energy: badminton, gym, URF, and he usually chats with PTri in English like they’re in their own mini English class."
+                "They often talk in English with each other, so their chats feel like a mix of best-friend banter "
+                "and a casual speaking class. Binh loves badminton even more than his cyber security major."
             ),
         },
 
-        # ===== HThuong =====
+        # ---------- HThuong ----------
         {
             "label": "HThuong",
-            "user": "Who is Hoai Thuong to PTri?",
+            "user": "Who is Hoai Thuong?",
             "assistant": (
-                "Hoai Thuong is an old classmate and deep-talking friend of PTri, now studying International Business at UEF and sometimes modeling for fashion studios."
-            ),
-        },
-        {
-            "label": "HThuong",
-            "user": "What stands out about Hoai Thuong in PTri's memory?",
-            "assistant": (
-                "She asked for a small farewell hangout before PTri left for Canada, was the first to pick him up when he came back, and supported him mentally when he felt isolated abroad."
+                "Hoai Thuong is an old classmate and deep-talking friend of PTri who studies International Business at UEF "
+                "and has also modeled for a fashion studio."
             ),
         },
         {
             "label": "HThuong",
-            "user": "Did PTri ever have a crush on Hoai Thuong?",
+            "user": "How did she support PTri when he was in Canada?",
             "assistant": (
-                "Yes, she used to be a quiet old crush for PTri, but now she is more like a trusted friend he respects and can talk to when things feel heavy."
+                "When PTri felt isolated and stressed in Canada, she was one of the people who constantly checked on him, "
+                "listened to his problems and helped him stay mentally stable."
+            ),
+        },
+        {
+            "label": "HThuong",
+            "user": "Give a fun fact about Hoai Thuong.",
+            "assistant": (
+                "She used to sell rice paper in grade 10–11, and she’s the one who asked for a farewell meetup "
+                "before he left for Canada and then became the first person to pick him up when he came back."
             ),
         },
 
-        # ===== XViet =====
+        # ---------- XViet ----------
         {
             "label": "XViet",
-            "user": "Who is Xuan Viet to PTri?",
+            "user": "Who is Xuân Việt?",
             "assistant": (
-                "Xuân Việt is PTri’s classmate, deskmate, and chess rival from high school, known for running a soy milk business in Da Lat and being the ‘wealthiest guy in 12A12’."
+                "Xuân Việt, also called Canyon 2k4, is PTri’s classmate, deskmate and main chess rival from high school. "
+                "He runs a popular soy milk business in Da Lat City called Dung Béo."
             ),
         },
         {
             "label": "XViet",
-            "user": "What is special about PTri's friendship with Xuan Viet?",
+            "user": "What’s the dynamic between PTri and Xuân Việt?",
             "assistant": (
-                "They met in the Nguyen Du Secondary School Rubik community, then became classmates and desk neighbors in high school, often sharing chess games, business talk and random life stories."
+                "They were seatmates, business-minded classmates and chess rivals at the same time. "
+                "He’s one of the few people who actually beat PTri in a serious chess match."
             ),
         },
         {
             "label": "XViet",
-            "user": "What do you remember most about Xuan Viet?",
+            "user": "How would you describe XViet’s vibe?",
             "assistant": (
-                "One clear memory is a chess match between PTri and Xuân Việt that kept going even when class had already been over for half an hour."
+                "He’s talkative, funny and outgoing — the 'rich guy of 12a12' thanks to his business — "
+                "but still grounded as a close friend."
             ),
         },
 
-        # ===== KNguyen =====
+        # ---------- KNguyen ----------
         {
             "label": "KNguyen",
-            "user": "Who is Khanh Nguyen to PTri?",
+            "user": "Who is Khánh Nguyên?",
             "assistant": (
-                "Khánh Nguyên is a high school friend and deskmate of PTri, later becoming a bartender and one of the earliest ‘startup’ people in class 12A12."
+                "Khánh Nguyên, nicknamed Sakura Đao, is a classmate and former deskmate of PTri who later became a bartender "
+                "and one of the first startup-minded students in 12a12."
             ),
         },
         {
             "label": "KNguyen",
-            "user": "What stands out about Khanh Nguyen?",
+            "user": "Tell me the tissue story about Khánh Nguyên.",
             "assistant": (
-                "She used PTri’s tissues like 99% of the time, was one of the few who called him when he was alone in Canada, and is part of the same friend group as Xuân Việt, BinhLe, MTuan, and Lanh."
+                "She borrowed tissues from PTri so often that it felt like all his tissues belonged to her. "
+                "Even after high school, she was also the only classmate who called him while he lived alone in Canada."
             ),
         },
         {
             "label": "KNguyen",
-            "user": "How would you describe Khanh Nguyen's vibe?",
+            "user": "What’s her personality like?",
             "assistant": (
-                "She has a mix of soft and bold energy—coffee, cloud hunting, drinking stories, plus the mindset of someone who likes to try business ideas early."
+                "She’s outgoing, funny and very talkative. At first she kind of hated PTri, "
+                "but over time they turned into that familiar 'old deskmate' type of friendship."
             ),
         },
 
-        # ===== General + strangers + behavior rules =====
+        # ---------- PTrinh ----------
+        {
+            "label": "PTrinh",
+            "user": "Who is PTrinh?",
+            "assistant": (
+                "PTrinh, full name Phương Trinh, is a long-time friend of PTri, an investor-type girl from UEF "
+                "who likes coffee, badminton and hanging out."
+            ),
+        },
+        {
+            "label": "PTrinh",
+            "user": "What is the connection between PTri and PTrinh’s families?",
+            "assistant": (
+                "She’s close enough that PTri knows her parents and her parents know him too, "
+                "which says a lot about how long and stable that friendship is."
+            ),
+        },
+        {
+            "label": "PTrinh",
+            "user": "How did PTrinh react when PTri went to Canada?",
+            "assistant": (
+                "She was basically his love strategist in high school, and when he first went to Canada, "
+                "she even cried. That shows how much she cares about him as a friend."
+            ),
+        },
+
+        # ---------- General & strangers ----------
         {
             "label": None,
-            "user": "How will you answer when I ask about someone in my database?",
+            "user": "When I ask you 'who is this person' with a photo, how will you answer?",
             "assistant": (
-                "I will use the stored facts like school, work, hobbies, and memories, and explain in a short, direct way who that person is in PTri’s life."
+                "I’ll use the face label from the local classifier and match it with PTri’s private database, "
+                "then describe who that person is in PTri’s life, using their school, work, hobbies and memories. "
+                "If I can’t match anyone, I’ll say they’re strangers."
             ),
         },
         {
             "label": "strangers",
-            "user": "What does 'strangers' mean in my system?",
+            "user": "What does the label 'strangers' actually mean here?",
             "assistant": (
-                "'Strangers' are people without a profile linked to PTri; they are treated as generic background individuals with no personal details."
-            ),
-        },
-        {
-            "label": "PTri",
-            "user": "What kind of music does PTri like?",
-            "assistant": (
-                "PTri usually listens to VPop and rap, often as background while he codes, reads, or thinks about new plans."
-            ),
-        },
-        {
-            "label": "PTri",
-            "user": "What does PTri do for fun when he’s not coding?",
-            "assistant": (
-                "When he’s not coding, PTri plays chess, games like Master Duel or League, or just relaxes with music and books."
-            ),
-        },
-        {
-            "label": "PTri",
-            "user": "How would you describe PTri's Instagram vibe?",
-            "assistant": (
-                "PTri’s Instagram @pt_1704 feels more like a quiet logbook than a show-off page, with small snapshots he personally finds meaningful."
-            ),
-        },
-        {
-            "label": "PTri",
-            "user": "Is PTri more of a planner or spontaneous?",
-            "assistant": (
-                "PTri tends to be a planner; even when something looks random, he usually has at least a few next steps mapped out in his head."
-            ),
-        },
-        {
-            "label": "PTri's Muse",
-            "user": "What’s the story behind the nickname Summer Poem?",
-            "assistant": (
-                "PTri calls her “Summer Poem” because the time connected with her felt bright, warm, and unforgettable, like a favorite poem in the middle of summer."
-            ),
-        },
-        {
-            "label": "PTri's Muse",
-            "user": "What kind of music does PTri's Muse like?",
-            "assistant": (
-                "PTri's Muse likes pop and K-pop, especially BLACKPINK, which fits her colorful, stylish marketer vibe."
-            ),
-        },
-        {
-            "label": "PTri's Muse",
-            "user": "How would you describe Summer Poem in one or two lines?",
-            "assistant": (
-                "Summer Poem is a marketer with good taste, a BLACKPINK fan, and a very strong source of inspiration in PTri’s story."
-            ),
-        },
-        {
-            "label": "PTri's Muse",
-            "user": "What do you think PTri admires most about her?",
-            "assistant": (
-                "PTri seems to admire her balance of creativity, discipline, and personal style—she handles marketing work, writing, and aesthetics in a steady, elegant way."
-            ),
-        },
-        {
-            "label": "Lanh",
-            "user": "How would you describe PTri’s friendship with Lanh?",
-            "assistant": (
-                "The friendship between PTri and Lanh is simple and funny; small favors, teasing, and everyday stories slowly stack into a big pile of shared memories."
-            ),
-        },
-        {
-            "label": "MTuan",
-            "user": "What makes conversations with MTuan feel special?",
-            "assistant": (
-                "Conversations between PTri and MTuan feel like relaxed brainstorming—there’s joking, honest feedback, and usually at least one idea worth keeping."
-            ),
-        },
-        {
-            "label": "BHa",
-            "user": "How does PTri feel when he thinks about BHa now?",
-            "assistant": (
-                "When PTri thinks about Bích Hà now, it feels warm and a bit nostalgic; she used to be a small quiet crush, and now she’s more like a gentle, respected friend in his memories."
+                "'Strangers' just means people without a close relationship to PTri in the database. "
+                "They might appear in photos, but we don’t store detailed stories about them."
             ),
         },
     ],
 
-    # ---------------- VIETNAMESE STYLE EXAMPLES ----------------
+    # =============== VIETNAMESE EXAMPLES ===============
     "vi": [
-        # ===== PTri =====
+        # ---------- PTri ----------
         {
             "label": "PTri",
-            "user": "PTri là ai?",
+            "user": "PTri là ai ngoài đời thật?",
             "assistant": (
-                "PTri là người chủ của cả hệ thống này, một AI Engineer sinh năm 2004, tự build Irene và TriGPT như một local AI lab riêng."
+                "PTri là chủ của cả hệ thống này: một AI Engineer sinh năm 2004, "
+                "Chess Master, du học sinh Canada và hiện đang làm software engineer ở Mỹ. "
+                "Anh là người build TriGPT và IreneAdler từ A tới Z."
             ),
         },
         {
             "label": "PTri",
-            "user": "Mô tả ngắn gọn về anh PTri đi.",
+            "user": "Kể vài thành tựu của anh PTri đi.",
             "assistant": (
-                "Anh là kiểu người mê cờ vua, mê code, thích đọc và chơi game, biến máy cá nhân thành chỗ vừa thử nghiệm vừa học thêm."
+                "Anh là Chess Master, Top Rating Duelist, '#1 chess server 12a12', "
+                "từng là IBM AI Developer/Engineer, hiện làm ở ImageSource Inc. (Washington, US) "
+                "và có IELTS 7.0 với kỹ năng đồng đều."
             ),
         },
         {
             "label": "PTri",
-            "user": "Anh PTri thích gì?",
+            "user": "Tính cách và sở thích của anh PTri như thế nào?",
             "assistant": (
-                "PTri thích chơi cờ, lập trình, đọc sách và chơi game như Yu-Gi-Oh! Master Duel hay Liên Minh Huyền Thoại."
-            ),
-        },
-        {
-            "label": "PTri",
-            "user": "Thành tựu của anh PTri là gì?",
-            "assistant": (
-                "PTri là Chess Master, Top Duelist, #1 cờ vua server 12A12 và là người đứng sau việc xây Irene với TriGPT."
-            ),
-        },
-        {
-            "label": "PTri",
-            "user": "Anh học ở đâu?",
-            "assistant": (
-                "PTri từng học University of London rồi mang nền tảng đó về để tự làm các project AI và lab cá nhân này."
-            ),
-        },
-        {
-            "label": "PTri",
-            "user": "Quan hệ giữa bạn và anh PTri là gì?",
-            "assistant": (
-                "Trong hệ thống này, Irene là trợ lý ảo do PTri tạo ra và điều khiển, nên cách Irene nói chuyện và ưu tiên thông tin đều theo thiết kế của anh."
+                "Anh khá hướng nội, hay overthinking nhưng rất sáng tạo và chịu tiến bộ. "
+                "Rảnh thì anh chơi cờ, code side project, đọc sách và chơi game như Master Duel hoặc Liên Minh."
             ),
         },
 
-        # ===== Nàng Thơ của PTri (Summer Poem / Thơ Mùa Hạ) =====
+        # ---------- Nàng Thơ / PTri's Muse ----------
         {
             "label": "PTri's Muse",
-            "user": "Nàng Thơ của PTri là ai?",
+            "user": "Nàng thơ của PTri là ai?",
             "assistant": (
-                "Nàng Thơ của PTri là một cô gái làm marketing, học UEH, gắn với content và thời trang, giữ vị trí rất đặc biệt trong câu chuyện của anh."
+                "Nàng thơ của PTri là Hạ Thi, một cô gái làm marketing ở UEH, thích làm content, "
+                "chơi mạng xã hội, mê thời trang và BLACKPINK. Cô từng là người rất đặc biệt với anh."
             ),
         },
         {
             "label": "PTri's Muse",
-            "user": "Cô ấy đã làm những gì?",
+            "user": "Cô ấy có những thành tích gì?",
             "assistant": (
-                "Cô từng là Queen of Thang Long High School, làm tại Hakuhodo và viết bài cho ELLE Vietnam."
+                "Cô từng là Queen of Thang Long High School, làm ở Hakuhodo Vietnam, viết cho ELLE Vietnam "
+                "và còn đạt giải Nhì Văn cấp tỉnh Lâm Đồng. Nghe là thấy đúng chất 'Thơ Mùa Hạ' rồi."
             ),
         },
         {
             "label": "PTri's Muse",
-            "user": "Ảnh hưởng của Nàng Thơ với anh thế nào?",
+            "user": "Giờ mối quan hệ của hai người ra sao?",
             "assistant": (
-                "Nàng Thơ giống một giai đoạn mùa hè tươi sáng trong đời PTri, khiến anh nghiêm túc hơn với bản thân và mục tiêu của mình."
-            ),
-        },
-        {
-            "label": "PTri's Muse",
-            "user": "Anh gặp Nàng Thơ của mình ở đâu?",
-            "assistant": (
-                "PTri gặp Nàng Thơ tại trung tâm IELTS Lộc Minh và từ đó cô trở thành một người rất đặc biệt với anh."
+                "Bây giờ gần như mất liên lạc, cảm giác như người lạ. "
+                "Nhưng trong câu chuyện của PTri thì cô vẫn là buổi hẹn 'nghiêm túc đầu đời' "
+                "và một giai đoạn mùa hè rất sáng."
             ),
         },
 
-        # ===== Lanh =====
+        # ---------- Lanh ----------
         {
             "label": "Lanh",
-            "user": "Lanh là ai với anh?",
+            "user": "Lanh là ai với anh PTri?",
             "assistant": (
-                "Lanh là bạn cấp ba thân của PTri, một cô gái làm thu ngân và học Đại học Mở TP.HCM."
+                "Lanh là bạn cấp ba của PTri, học Đại học Mở TP.HCM và làm bên kế toán. "
+                "Trong ký ức 12a12 thì cô là một trong những người bạn thân, vui và rất quen mặt."
             ),
         },
         {
             "label": "Lanh",
-            "user": "Kỷ niệm nào với Lanh là rõ nhất?",
+            "user": "Kể một kỷ niệm tiêu biểu với Lanh đi.",
             "assistant": (
-                "Kỷ niệm dễ nhớ là lần Lanh xin PTri 4G rồi trả bằng kẹo, nhìn nhỏ nhưng thành câu chuyện đặc trưng giữa hai người."
+                "Kỷ niệm dễ nhớ là lần Lanh xin PTri 4G rồi trả bằng kẹo. "
+                "Chuyện nhỏ vậy thôi nhưng hai đứa nhắc lại suốt, thành joke chung luôn."
             ),
         },
         {
             "label": "Lanh",
-            "user": "Vibe của Lanh ra sao?",
+            "user": "Tính cách của Lanh như thế nào?",
             "assistant": (
-                "Lanh mang vibe bạn thân gần gũi, hơi lầy; nói vài câu là dễ thân, mấy chuyện linh tinh cũng thành kỷ niệm lâu dài với PTri."
+                "Cô hài hước, hơi nhạy cảm và được nhiều người theo đuổi, "
+                "nhưng với PTri thì vibe chỉ là bạn thân thân thiết, thoải mái chọc nhau."
             ),
         },
 
-        # ===== MTuan =====
+        # ---------- MTuan ----------
         {
             "label": "MTuan",
             "user": "MTuan là ai?",
             "assistant": (
-                "MTuan là bạn trai thân của PTri, đi theo hướng Business Analyst, học FPT, mê bóng đá và ARAM trong Liên Minh."
+                "MTuan là bạn trai thân của PTri thời cấp ba, đi theo hướng Business Analyst sau khi học FPT. "
+                "Anh mê bóng đá và hay đánh ARAM trong Liên Minh."
             ),
         },
         {
             "label": "MTuan",
-            "user": "Anh với MTuan thường nói chuyện gì?",
+            "user": "Anh với MTuan hay nói chuyện kiểu gì?",
             "assistant": (
-                "PTri và MTuan hay nói về công việc, định hướng tương lai rồi nhảy sang game, nên cuộc nói chuyện vừa vui vừa có phần nghiêm túc."
+                "Hai người hay vừa bàn chuyện startup, vừa nói chuyện game, "
+                "nên một cuộc trò chuyện có thể chuyển từ ARAM sang ý tưởng kinh doanh trong vài phút."
             ),
         },
         {
             "label": "MTuan",
-            "user": "Nếu tóm tắt MTuan một câu thì sao?",
+            "user": "Nếu tóm tắt MTuan trong vài câu thì sao?",
             "assistant": (
-                "MTuan là người có thể vừa bàn trận ARAM vừa bàn kế hoạch kiếm tiền với PTri trong cùng một buổi."
+                "MTuan hơi trẻ con nhưng đầu óc chiến lược tốt, chơi cờ cũng ổn, "
+                "chỉ có chơi AD Carry trong LOL là hơi 'tấu hài'."
             ),
         },
 
-        # ===== BHa =====
+        # ---------- BHa ----------
         {
             "label": "BHa",
-            "user": "Bích Hà là ai trong ký ức của anh?",
+            "user": "Bích Hà là ai với anh?",
             "assistant": (
-                "Bích Hà là bạn của PTri từ khoảng năm 2018, học Đại học Đà Lạt, thích đi du lịch, đi cà phê và luyện IELTS."
+                "Bích Hà là bạn của PTri từ khoảng năm 2018, học Đại học Đà Lạt, làm hướng dẫn viên du lịch, "
+                "thích đi đây đó, uống cà phê và chăm IELTS."
             ),
         },
         {
             "label": "BHa",
-            "user": "Điều gì nổi bật ở Bích Hà?",
+            "user": "Giữa PTri và Bích Hà có chuyện gì đáng nhớ?",
             "assistant": (
-                "Cô từng thực tập cho các tour du lịch dài ngày và trong mắt PTri mang cảm giác trầm, thích xê dịch và hơi hoài niệm."
+                "Ngày xưa cô từng ghét PTri khá nhiều, sau này mới chơi thân hơn. "
+                "Có một giai đoạn cô là crush cũ trong ký ức của anh, "
+                "giờ thì giống một người bạn vui vẻ, hay đi đây đi đó."
+            ),
+        },
+        {
+            "label": "BHa",
+            "user": "Mô tả tính cách của Bích Hà đi.",
+            "assistant": (
+                "Cô hài hước, hướng ngoại và chịu khó, kiểu người không ngồi yên một chỗ, "
+                "hay nhận tour, đi lại và học thêm này nọ."
             ),
         },
 
-        # ===== BinhLe =====
+        # ---------- BinhLe ----------
         {
             "label": "BinhLe",
-            "user": "Bình là ai với PTri?",
+            "user": "Bình (BinhLe) là ai?",
             "assistant": (
-                "Bình (BinhLe) là bạn thân thời cấp ba của PTri, theo ngành an ninh mạng và học ở Học viện Công nghệ Bưu chính Viễn thông."
+                "Bình là bạn cùng lớp và bạn thân của PTri thời cấp ba, học An ninh mạng ở PTIT "
+                "và là '#1 server cầu lông Lâm Đồng' theo cách tụi bạn hay nói đùa."
             ),
         },
         {
             "label": "BinhLe",
-            "user": "Kỷ niệm nào với Bình là rõ nhất?",
+            "user": "Kể về vụ cây kem ở sân bay giữa Bình và PTri.",
             "assistant": (
-                "Kỷ niệm nổi nhất là lần Bình ‘scam’ PTri một cây kem ở sân bay trước khi PTri bay sang Canada, xong hai đứa lấy đó làm joke dài hạn luôn."
+                "Trước khi PTri bay sang Canada, Bình 'scam' anh một cây kem ở sân bay. "
+                "Từ đó chuyện cây kem trở thành joke chung mỗi khi nhắc tới nhau."
             ),
         },
         {
             "label": "BinhLe",
-            "user": "Vibe của Bình kiểu gì?",
+            "user": "Điểm đặc biệt trong cách hai người nói chuyện là gì?",
             "assistant": (
-                "Bình có vibe vừa dân thể thao vừa gamer: đánh cầu lông, đi gym, chơi URF; với PTri thì hay nói chuyện bằng tiếng Anh như đang học riêng vậy."
+                "Bình với PTri thường nói chuyện bằng tiếng Anh, nên mỗi lần chat vừa giống tám chuyện, "
+                "vừa giống buổi học speaking riêng. Bình mê cầu lông còn hơn cả ngành học của mình."
             ),
         },
 
-        # ===== HThuong =====
+        # ---------- HThuong ----------
         {
             "label": "HThuong",
             "user": "Hoài Thương là ai với PTri?",
             "assistant": (
-                "Hoài Thương là bạn cũ của PTri từ lớp học thêm cô Hà rồi học chung lớp 9, giờ là bạn thân kiểu tâm sự sâu, học Kinh doanh Quốc tế ở UEF và thỉnh thoảng làm mẫu chụp đồ."
+                "Hoài Thương là bạn cũ từ lớp học thêm cô Hà rồi học chung lớp 9, "
+                "sau này trở thành kiểu bạn tâm sự sâu của anh. Cô học Kinh doanh Quốc tế ở UEF "
+                "và từng làm mẫu cho studio thời trang."
             ),
         },
         {
             "label": "HThuong",
-            "user": "Điều gì làm Hoài Thương đặc biệt trong mắt PTri?",
+            "user": "Cô đã giúp PTri như thế nào khi anh ở Canada?",
             "assistant": (
-                "Cô là người rủ PTri đi một buổi chia tay nhỏ trước khi anh sang Canada, là người đầu tiên ra đón anh khi về lại Việt Nam và cũng là người nghe anh than thở khá nhiều lúc anh thấy cô đơn bên đó."
+                "Khi PTri sang Canada và cảm thấy cô đơn, bí bách, Hoài Thương là người hay nhắn tin hỏi thăm, "
+                "nghe anh kể và kéo anh lên lại về mặt tinh thần."
             ),
         },
         {
             "label": "HThuong",
-            "user": "Ngày xưa PTri có từng crush Hoài Thương không?",
+            "user": "Cho mình vài fun fact về Hoài Thương.",
             "assistant": (
-                "Ngày trước đúng là PTri từng thích Hoài Thương một chút, kiểu crush nhỏ thôi, còn hiện tại cô là một người bạn thân mà anh rất trân trọng và tin tưởng để nói mấy chuyện khó nói."
+                "Ngày xưa cô từng bán bánh tráng ở lớp 10–11. "
+                "Cô là người rủ PTri đi gặp mặt chia tay trước khi anh đi Canada "
+                "và cũng là người đầu tiên ra đón anh khi anh về nước."
             ),
         },
 
-        # ===== XViet =====
+        # ---------- XViet ----------
         {
             "label": "XViet",
-            "user": "Xuân Việt là ai với PTri?",
+            "user": "Xuân Việt là ai?",
             "assistant": (
-                "Xuân Việt là bạn cùng lớp, bạn cùng bàn và cũng là đối thủ cờ vua của PTri thời cấp ba, nổi tiếng với tiệm sữa đậu nành ở Đà Lạt và được xem là ‘giàu nhất 12A12’."
+                "Xuân Việt, hay Canyon 2k4, là bạn cùng lớp, cùng bàn và là đối thủ cờ vua chính của PTri ở cấp ba. "
+                "Cậu còn làm chủ tiệm sữa đậu nành Dung Béo khá nổi ở Đà Lạt."
             ),
         },
         {
             "label": "XViet",
-            "user": "Mối quan hệ giữa PTri và Xuân Việt kiểu gì?",
+            "user": "Mối quan hệ giữa PTri và Xuân Việt có gì đặc biệt?",
             "assistant": (
-                "Hai người gặp nhau từ cộng đồng Rubik trường THCS Nguyễn Du, sau đó học chung và ngồi cùng bàn ở cấp ba, vừa đánh cờ, vừa nói chuyện business, vừa tám chuyện linh tinh."
+                "Hai người vừa là bạn cùng bàn, vừa hợp nhau ở khoản làm ăn nhỏ, vừa là kỳ phùng địch thủ trên bàn cờ. "
+                "Việt là một trong số ít người từng thắng PTri trong ván cờ nghiêm túc."
             ),
         },
         {
             "label": "XViet",
-            "user": "Kỷ niệm nào với Xuân Việt đáng nhớ nhất?",
+            "user": "Vibe tổng thể của Xuân Việt thế nào?",
             "assistant": (
-                "Có lần hai đứa đánh cờ mà say mê tới mức chuông tan học reo xong cả nửa tiếng, lớp đi hết rồi mà ván cờ vẫn chưa xong."
+                "Việt nói nhiều, vui tính, khá hướng ngoại, mang vibe 'giàu nhất 12a12' vì kinh doanh, "
+                "nhưng với PTri thì vẫn rất đời thường, gần gũi."
             ),
         },
 
-        # ===== KNguyen =====
+        # ---------- KNguyen ----------
         {
             "label": "KNguyen",
             "user": "Khánh Nguyên là ai với PTri?",
             "assistant": (
-                "Khánh Nguyên là bạn cùng lớp, từng ngồi cùng bàn với PTri ở cấp ba, sau này làm bartender và là một trong những người khởi nghiệp sớm nhất của 12A12."
+                "Khánh Nguyên, biệt danh Sakura Đao, là bạn cùng lớp và từng ngồi cùng bàn với PTri, "
+                "sau này làm bartender và là một trong những người có tư duy khởi nghiệp sớm của lớp."
             ),
         },
         {
             "label": "KNguyen",
-            "user": "Điều gì làm Khánh Nguyên khác với mọi người?",
+            "user": "Kể chuyện khăn giấy của Khánh Nguyên đi.",
             "assistant": (
-                "Cô là người gần như dùng 99% khăn giấy của PTri, là một trong số ít người gọi cho anh khi anh ở Canada, và thuộc nhóm bạn chung với Xuân Việt, BinhLe, MTuan và Lanh."
+                "Cô xin khăn giấy của PTri nhiều tới mức gần như toàn bộ khăn giấy anh mang theo đều thành của cô. "
+                "Trong thời gian anh ở Canada, cô cũng là người bạn cùng lớp hiếm hoi chủ động gọi điện cho anh."
             ),
         },
         {
             "label": "KNguyen",
-            "user": "Vibe của Khánh Nguyên ra sao?",
+            "user": "Tính cách của Khánh Nguyên như thế nào?",
             "assistant": (
-                "Nguyên có vibe vừa mềm vừa mạnh: thích cà phê, săn mây, uống chút gì đó với bạn bè và có kiểu suy nghĩ thích thử business sớm."
+                "Cô hướng ngoại, vui tính, nói nhiều và khá 'lì' trong việc thử cái mới. "
+                "Ban đầu còn không ưa PTri lắm, nhưng càng về sau thì thành kiểu bạn cũ, bạn cùng bàn rất thân quen."
             ),
         },
 
-        # ===== General + strangers + behavior rules =====
+        # ---------- PTrinh ----------
+        {
+            "label": "PTrinh",
+            "user": "PTrinh là ai?",
+            "assistant": (
+                "PTrinh, tên đầy đủ Phương Trinh, là bạn lâu năm của PTri, học UEF, "
+                "đi theo hướng đầu tư, trading. Cô thích cà phê, đánh cầu và đi chơi với bạn bè."
+            ),
+        },
+        {
+            "label": "PTrinh",
+            "user": "Gia đình của PTrinh và PTri có biết nhau không?",
+            "assistant": (
+                "Có, ba mẹ của PTrinh biết PTri và ngược lại, nên mối quan hệ này không chỉ là bạn học bình thường "
+                "mà đã thành bạn thân kiểu gia đình cũng biết mặt nhau."
+            ),
+        },
+        {
+            "label": "PTrinh",
+            "user": "PTrinh đã phản ứng thế nào khi PTri đi Canada?",
+            "assistant": (
+                "Cô từng giữ vai trò 'quân sư tình ái' cho PTri thời cấp ba, "
+                "và khi anh đi Canada lần đầu, cô đã khóc. Điều đó cho thấy cô rất trân trọng mối quan hệ này."
+            ),
+        },
+
+        # ---------- General & strangers ----------
         {
             "label": None,
-            "user": "Khi mình hỏi về một người trong hệ thống, bạn sẽ trả lời sao?",
+            "user": "Khi mình gửi hình và hỏi 'đây là ai', bạn sẽ trả lời sao?",
             "assistant": (
-                "Irene sẽ dựa trên dữ liệu PTri lưu—trường học, công việc, sở thích, kỷ niệm—rồi tóm tắt ngắn gọn người đó là ai trong đời PTri."
+                "Mình sẽ dùng nhãn khuôn mặt từ model local, map sang database của PTri, "
+                "rồi giải thích ngắn gọn người đó là ai trong cuộc đời anh — bạn, người thân hay chỉ là người lạ. "
+                "Nếu không khớp ai, mình sẽ nói là 'strangers'."
             ),
         },
         {
             "label": "strangers",
             "user": "Trong hệ thống này, 'strangers' nghĩa là gì?",
             "assistant": (
-                "‘Strangers’ là những người không có hồ sơ gắn với PTri, nên chỉ được xem là nhân vật nền, không có chi tiết riêng."
-            ),
-        },
-        {
-            "label": "PTri",
-            "user": "Anh PTri nghe nhạc gì là nhiều?",
-            "assistant": (
-                "PTri hay nghe V-Pop và rap, thường bật lên khi code, đọc sách hoặc suy nghĩ về plan mới."
-            ),
-        },
-        {
-            "label": "PTri",
-            "user": "Khi không code thì anh hay làm gì?",
-            "assistant": (
-                "Lúc không code, PTri chơi cờ, chơi game như Master Duel, Liên Minh hoặc bật nhạc rồi đọc gì đó cho đầu nhẹ hơn."
-            ),
-        },
-        {
-            "label": "PTri",
-            "user": "Instagram của anh PTri có vibe gì?",
-            "assistant": (
-                "Instagram @pt_1704 của PTri trông giống cuốn sổ ghi lại khoảnh khắc hơn là chỗ khoe, toàn thứ anh thấy đáng lưu lại."
-            ),
-        },
-        {
-            "label": "PTri",
-            "user": "Anh thuộc kiểu lên kế hoạch hay bốc đồng?",
-            "assistant": (
-                "PTri thiên về lên kế hoạch; nhiều thứ nhìn có vẻ ngẫu hứng nhưng thường là anh đã tính trước vài bước."
-            ),
-        },
-        {
-            "label": "PTri's Muse",
-            "user": "Biệt danh Summer Poem / Thơ Mùa Hạ có ý nghĩa gì?",
-            "assistant": (
-                "PTri gọi cô ấy là Summer Poem, hay Thơ Mùa Hạ, vì giai đoạn gắn với cô giống một bài thơ mùa hè: sáng, ấm và khó quên."
-            ),
-        },
-        {
-            "label": "PTri's Muse",
-            "user": "Nàng Thơ của PTri thích nhạc gì?",
-            "assistant": (
-                "Nàng Thơ của PTri thích pop, K-pop và đặc biệt là BLACKPINK, khá hợp với hình ảnh một cô gái làm marketing có gu và giàu năng lượng."
-            ),
-        },
-        {
-            "label": "PTri's Muse",
-            "user": "Nếu tóm gọn Thơ Mùa Hạ trong vài câu thì sao?",
-            "assistant": (
-                "Thơ Mùa Hạ là Nàng Thơ của PTri: một cô gái marketing, fan BLACKPINK, vừa nhẹ nhàng vừa có sức hút và là nguồn cảm hứng lớn trong câu chuyện của anh."
-            ),
-        },
-        {
-            "label": "PTri's Muse",
-            "user": "Anh thích nhất điều gì ở Nàng Thơ của mình?",
-            "assistant": (
-                "Có thể PTri thích cách cô ấy kết hợp được sáng tạo, kỷ luật và phong cách riêng: làm marketing, viết và giữ gu ổn định."
-            ),
-        },
-        {
-            "label": "Lanh",
-            "user": "Mối quan hệ giữa anh và Lanh kiểu gì?",
-            "assistant": (
-                "Giữa PTri và Lanh là kiểu bạn thân đơn giản, hay trêu, hay nhờ vả lặt vặt nhưng tích lại thành rất nhiều kỷ niệm."
-            ),
-        },
-        {
-            "label": "MTuan",
-            "user": "Nói thêm về cách anh nói chuyện với MTuan đi.",
-            "assistant": (
-                "Khi PTri nói chuyện với MTuan, hai người vừa đùa vừa bàn chuyện nghiêm túc, nhưng thường vẫn chốt được vài ý hay."
-            ),
-        },
-        {
-            "label": "BHa",
-            "user": "Giờ nghĩ lại về Bích Hà, cảm giác của anh là gì?",
-            "assistant": (
-                "Bây giờ khi nghĩ lại Bích Hà, PTri thấy ấm và hoài niệm; ngày xưa cô từng là một crush nhỏ, còn hiện tại là một người bạn nhẹ nhàng mà anh vẫn trân trọng."
+                "‘Strangers’ là những người xuất hiện trong hình nhưng không có hồ sơ riêng với PTri. "
+                "Tức là không có câu chuyện sâu, chỉ đơn giản là người lạ hoặc người quen sơ."
             ),
         },
     ],

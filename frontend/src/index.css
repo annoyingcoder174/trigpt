@@ -759,3 +759,38 @@ body {
     font-size: 0.82rem;
   }
 }
+
+.message-column {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.assistant-name {
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-left: 0.25rem;
+  margin-bottom: 0.15rem;
+}
+
+.feedback-thumbs {
+  display: flex;
+  gap: 0.25rem;
+  margin-left: 0.5rem;
+}
+
+.thumb-btn {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+.thumb-btn.thumb-up:hover {
+  transform: scale(1.1);
+}
+
+.thumb-btn.thumb-down:hover {
+  transform: scale(1.1);
+}

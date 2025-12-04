@@ -9,7 +9,6 @@ import time
 import json
 import os
 
-
 import cv2
 import numpy as np
 
@@ -31,7 +30,7 @@ except ImportError:
 from .llm_client import LLMClient
 from .doc_ingestion import load_pdf_text, load_pdf_text_from_bytes, chunk_text
 from .vector_store import add_document, query_document, list_documents
-from .vision_model import FaceClassifier
+from .uniface_face_classifier import FaceClassifier
 from .s3_storage import upload_pdf_bytes
 from .question_classifier import QuestionTypeClassifier
 from .reranker import Reranker
@@ -73,47 +72,70 @@ DYNAMIC_STYLE_EXAMPLES = load_dynamic_style_examples()
 # Feedback logs
 FEEDBACK_FILE = Path("data/chat_feedback.jsonl")
 
-# ---------- Model loading ----------
-
-try:
-    face_classifier = FaceClassifier(checkpoint_path="models/face_classifier.pt")
-    print("✅ Face classifier loaded for API.")
-except FileNotFoundError:
-    face_classifier = None
-    print("⚠️ Face classifier checkpoint not found. /predict_face, /secure_ask and identity features limited.")
-
-try:
-    question_classifier = QuestionTypeClassifier(model_dir="models/question_classifier")
-    print("✅ Question-type classifier loaded for API.")
-except FileNotFoundError:
-    question_classifier = None
-    print("⚠️ Question-type classifier not found. Intent detection disabled.")
-
-try:
-    reranker = Reranker()
-    print("✅ Reranker loaded for API.")
-except Exception as e:
-    reranker = None
-    print(f"⚠️ Reranker not available: {e}")
-
-try:
-    emotion_classifier = EmotionClassifier(checkpoint_path="models/emotion_classifier.pt")
-    print("✅ Emotion classifier loaded for API.")
-except FileNotFoundError:
-    emotion_classifier = None
-    print("⚠️ Emotion classifier checkpoint not found. /live_emotion and emotion in /vision_qa limited.")
-
-try:
-    object_detector = ObjectDetector(score_thresh=0.7)
-    print("✅ Object detector loaded for API (score_thresh=0.7).")
-except Exception as e:
-    object_detector = None
-    print(f"⚠️ Object detector not available: {e}")
-
-# ---------- Vision / identity thresholds ----------
+# ---------- Vision / identity thresholds & shared constants ----------
 
 # Below this, we **do not trust** the identity prediction
-IDENTITY_CONF_THRESHOLD: float = 0.70
+IDENTITY_CONF_THRESHOLD: float = 0.45
+
+# Shared mapping from raw detector labels -> high-level categories
+OBJECT_LABEL_MAP: Dict[str, str] = {
+    "person": "human",
+    "car": "car",
+    "truck": "car",
+    "bus": "car",
+    "motorcycle": "car",
+    "bicycle": "car",
+    "dog": "dog",
+    "cat": "cat",
+    "cell phone": "phone",
+    "mobile phone": "phone",
+    "potted plant": "tree",
+    "tree": "tree",
+}
+
+# Shared thresholds for filtering & merging boxes
+MIN_HUMAN_BOX_AREA_RATIO: float = 0.02  # ignore boxes < 2% of image area
+MAX_HUMAN_IOU: float = 0.55             # IoU threshold for duplicate suppression
+
+# src/api.py
+
+def classify_identity_from_bytes(image_bytes: bytes):
+    """
+    Run UniFace face ID once and trust its threshold.
+    If it returns 'strangers', keep it. No extra threshold here.
+    """
+    label, conf = face_classifier.predict_from_bytes(image_bytes)
+    identity_info = None
+    if label != "strangers":
+        identity_info = get_identity_summary(label)
+    return label, conf, identity_info
+
+def compute_iou(a: Dict[str, float], b: Dict[str, float]) -> float:
+    """
+    Compute IoU between two boxes with keys: x, y, w, h in normalized [0, 1] coords.
+    """
+    ax1 = a["x"]
+    ay1 = a["y"]
+    ax2 = a["x"] + a["w"]
+    ay2 = a["y"] + a["h"]
+
+    bx1 = b["x"]
+    by1 = b["y"]
+    bx2 = b["x"] + b["w"]
+    by2 = b["y"] + b["h"]
+
+    inter_x1 = max(ax1, bx1)
+    inter_y1 = max(ay1, by1)
+    inter_x2 = min(ax2, bx2)
+    inter_y2 = min(ay2, by2)
+
+    if inter_x2 <= inter_x1 or inter_y2 <= inter_y1:
+        return 0.0
+
+    inter = (inter_x2 - inter_x1) * (inter_y2 - inter_y1)
+    area_a = (ax2 - ax1) * (ay2 - ay1)
+    area_b = (bx2 - bx1) * (by2 - by1)
+    return inter / max(area_a + area_b - inter, 1e-6)
 
 
 def postprocess_identity_label(
@@ -144,6 +166,46 @@ def postprocess_identity_label(
 
     return raw_label, raw_conf
 
+
+# ---------- Model loading ----------
+
+try:
+    face_classifier = FaceClassifier(checkpoint_path="models/face_classifier.pt")
+    print("✅ Face classifier (UniFace) loaded for API.")
+except FileNotFoundError:
+    face_classifier = None
+    print(
+        "⚠️ Face classifier not available. "
+        "/predict_face, /secure_ask and identity features limited."
+    )
+
+try:
+    question_classifier = QuestionTypeClassifier(model_dir="models/question_classifier")
+    print("✅ Question-type classifier loaded for API.")
+except FileNotFoundError:
+    question_classifier = None
+    print("⚠️ Question-type classifier not found. Intent detection disabled.")
+
+try:
+    reranker = Reranker()
+    print("✅ Reranker loaded for API.")
+except Exception as e:
+    reranker = None
+    print(f"⚠️ Reranker not available: {e}")
+
+try:
+    emotion_classifier = EmotionClassifier(checkpoint_path="models/emotion_classifier.pt")
+    print("✅ Emotion classifier loaded for API.")
+except FileNotFoundError:
+    emotion_classifier = None
+    print("⚠️ Emotion classifier checkpoint not found. /live_emotion and emotion in /vision_qa limited.")
+
+try:
+    object_detector = ObjectDetector(score_thresh=0.7)
+    print("✅ Object detector loaded for API (score_thresh=0.7).")
+except Exception as e:
+    object_detector = None
+    print(f"⚠️ Object detector not available: {e}")
 
 
 class IngestRequest(BaseModel):
@@ -376,6 +438,89 @@ def looks_vietnamese(text: str) -> bool:
         "ýỳỷỹỵ"
     )
     return any(ch in t for ch in vi_chars)
+def wants_detailed_answer(text: str) -> bool:
+    """
+    Heuristic: does the user clearly ask for a long, detailed answer?
+    """
+    if not text:
+        return False
+    t = text.lower()
+    markers = [
+        "kể tất cả",
+        "nói tất cả",
+        "nói rõ hết",
+        "kể chi tiết",
+        "giải thích kỹ",
+        "phân tích kỹ",
+        "chi tiết nhất",
+        "kể đầy đủ",
+        "full story",
+        "tell me everything",
+        "explain in detail",
+        "very detailed",
+        "long answer",
+    ]
+    return any(m in t for m in markers)
+
+
+def wants_brief_answer(text: str) -> bool:
+    """
+    Heuristic: does the user clearly ask for a short / summary answer?
+    """
+    if not text:
+        return False
+    t = text.lower()
+    markers = [
+        "nói ngắn gọn",
+        "ngắn gọn thôi",
+        "tóm tắt",
+        "tóm lại",
+        "tóm tắt giúp",
+        "ngắn thôi",
+        "briefly",
+        "short answer",
+        "in short",
+        "in one sentence",
+    ]
+    return any(m in t for m in markers)
+
+
+def find_people_in_text(text: str) -> list[str]:
+    """
+    Very small heuristic:
+    Check if any identity key, label, or alias from IDENTITY_DB
+    appears as a substring in the question.
+    Returns a list of identity KEYS (e.g. 'PTri', 'BHa', \"PTri's Muse\").
+    """
+    if not text:
+        return []
+
+    t = text.lower()
+    found: list[str] = []
+
+    for key, info in IDENTITY_DB.items():
+        names: list[str] = []
+
+        # key name: "PTri", "Hoài Thương", ...
+        names.append(str(key))
+
+        # label: "HThuong", "PTri's Muse", ...
+        label = info.get("label")
+        if label:
+            names.append(str(label))
+
+        # aliases: optional
+        aliases = info.get("aliases") or []
+        names.extend(aliases)
+
+        for name in names:
+            if not name:
+                continue
+            if str(name).lower() in t:
+                found.append(key)
+                break
+
+    return found
 
 
 def select_style_examples(
@@ -641,7 +786,7 @@ async def predict_face(file: UploadFile = File(...)):
     if face_classifier is None:
         raise HTTPException(
             status_code=503,
-            detail="Face classifier not available. Train the model first.",
+            detail="Face classifier not available. Make sure UniFace is installed and images are in data/faces and data/val.",
         )
 
     if not is_image_upload(file):
@@ -674,7 +819,7 @@ async def secure_ask(
     if face_classifier is None:
         raise HTTPException(
             status_code=503,
-            detail="Face classifier not available. Train the model first.",
+            detail="Face classifier not available. Make sure UniFace is installed and images are in data/faces and data/val.",
         )
 
     if not is_image_upload(file):
@@ -697,7 +842,7 @@ async def secure_ask(
             emotion_label, emotion_conf = None, None
 
     threshold = 0.7
-    if identity != "PTri" or conf < threshold:
+    if identity != "PTri" or (conf or 0.0) < threshold:
         msg = (
             f"Access denied. I see '{identity}' with confidence {conf:.2f}, "
             f"but I only answer when I'm confident it's PTri."
@@ -780,23 +925,7 @@ async def vision_qa(
     - Still be fast / not crash your laptop.
     - Avoid hallucinating extra people (like Muse appearing when she is not there).
     - If confidence is low, call them 'strangers' instead of guessing.
-
-    Logic:
-    1) Decode image once.
-    2) Use object_detector to find 'person' boxes.
-       - Filter tiny boxes.
-       - Apply simple NMS so we don't get 7 boxes around one face.
-       - Keep only the largest few humans (MAX_HUMANS).
-    3) For each kept human:
-       - Crop.
-       - Run face_classifier + emotion_classifier on the crop.
-       - If identity_conf < IDENTITY_CONF_THRESHOLD -> label = "strangers".
-    4) If no human found at all:
-       - Fallback = run classifiers on the whole image once.
-    5) Build a factual summary: number of people, identity_label per #, emotions.
-       Pass that + short style examples to LLM with strict rules.
     """
-
     if not is_image_upload(file):
         raise HTTPException(status_code=400, detail="Uploaded file is not an image")
 
@@ -815,21 +944,6 @@ async def vision_qa(
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Error decoding image: {e}")
 
-    label_map = {
-        "person": "human",
-        "car": "car",
-        "truck": "car",
-        "bus": "car",
-        "motorcycle": "car",
-        "bicycle": "car",
-        "dog": "dog",
-        "cat": "cat",
-        "cell phone": "phone",
-        "mobile phone": "phone",
-        "potted plant": "tree",
-        "tree": "tree",
-    }
-
     human_infos: list[dict[str, Any]] = []
 
     # ---------- 1) Human detection via object_detector ----------
@@ -841,40 +955,11 @@ async def vision_qa(
     else:
         dets = []
 
-    # small helper: IoU to merge near-duplicate boxes
-    def iou(a, b) -> float:
-        ax1 = a["x"]
-        ay1 = a["y"]
-        ax2 = a["x"] + a["w"]
-        ay2 = a["y"] + a["h"]
-
-        bx1 = b["x"]
-        by1 = b["y"]
-        bx2 = b["x"] + b["w"]
-        by2 = b["y"] + b["h"]
-
-        inter_x1 = max(ax1, bx1)
-        inter_y1 = max(ay1, by1)
-        inter_x2 = min(ax2, bx2)
-        inter_y2 = min(ay2, by2)
-
-        if inter_x2 <= inter_x1 or inter_y2 <= inter_y1:
-            return 0.0
-
-        inter = (inter_x2 - inter_x1) * (inter_y2 - inter_y1)
-        area_a = (ax2 - ax1) * (ay2 - ay1)
-        area_b = (bx2 - bx1) * (by2 - by1)
-        return inter / max(area_a + area_b - inter, 1e-6)
-
-    # Filter to persons, remove tiny boxes and duplicates
-    MIN_AREA_RATIO = 0.02   # ignore boxes < 2% of image
-    MAX_IOU = 0.55          # if two boxes overlap more than this, keep only one
-
     human_boxes: list[dict[str, float]] = []
 
     for d in dets:
         raw_label = d.get("label", "")
-        if label_map.get(raw_label) != "human":
+        if OBJECT_LABEL_MAP.get(raw_label) != "human":
             continue
 
         x = float(d.get("x", 0.0))
@@ -887,20 +972,19 @@ async def vision_qa(
             continue
 
         box_area = w * h * img_area
-        if box_area < MIN_AREA_RATIO * img_area:
+        if box_area < MIN_HUMAN_BOX_AREA_RATIO * img_area:
             continue
 
         candidate = {"x": x, "y": y, "w": w, "h": h, "score": score}
 
         duplicate = False
         for kept in human_boxes:
-            if iou(candidate, kept) > MAX_IOU:
+            if compute_iou(candidate, kept) > MAX_HUMAN_IOU:
                 duplicate = True
                 break
         if not duplicate:
             human_boxes.append(candidate)
 
-    # Sort by area (largest first) and keep only a few humans
     MAX_HUMANS = 3
     human_boxes.sort(key=lambda b: b["w"] * b["h"], reverse=True)
     human_boxes = human_boxes[:MAX_HUMANS]
@@ -924,7 +1008,6 @@ async def vision_qa(
         if crop.size == 0:
             continue
 
-        # Encode crop once
         try:
             success, buffer = cv2.imencode(".jpg", crop)
             crop_bytes = buffer.tobytes() if success else None
@@ -938,18 +1021,13 @@ async def vision_qa(
 
         if crop_bytes is not None and face_classifier is not None:
             try:
-                identity_label, identity_conf = face_classifier.predict_from_bytes(
-                    crop_bytes
-                )
+                raw_label, raw_conf = face_classifier.predict_from_bytes(crop_bytes)
             except Exception:
-                identity_label, identity_conf = None, None
+                raw_label, raw_conf = None, None
 
-            if (
-                identity_conf is None
-                or identity_conf < IDENTITY_CONF_THRESHOLD
-                or identity_label is None
-            ):
-                identity_label = "strangers"
+            identity_label, identity_conf = postprocess_identity_label(
+                raw_label, raw_conf
+            )
 
         if crop_bytes is not None and emotion_classifier is not None:
             try:
@@ -977,17 +1055,13 @@ async def vision_qa(
 
         if face_classifier is not None:
             try:
-                fallback_identity, fallback_identity_conf = \
-                    face_classifier.predict_from_bytes(image_bytes)
+                raw_label, raw_conf = face_classifier.predict_from_bytes(image_bytes)
             except Exception:
-                fallback_identity, fallback_identity_conf = None, None
+                raw_label, raw_conf = None, None
 
-            if (
-                fallback_identity_conf is None
-                or fallback_identity_conf < IDENTITY_CONF_THRESHOLD
-                or fallback_identity is None
-            ):
-                fallback_identity = "strangers"
+            fallback_identity, fallback_identity_conf = postprocess_identity_label(
+                raw_label, raw_conf
+            )
 
         if emotion_classifier is not None:
             try:
@@ -1090,11 +1164,14 @@ async def vision_qa(
         "- If identity_label == 'strangers', it means you know nothing special about them; "
         "do NOT fabricate any personality or backstory, just say they're strangers.\n"
         "- Use the structured profiles as factual context (relationship to PTri, hobbies, etc.) but do NOT add facts that are not implied.\n"
-        "- Keep the answer reasonably short and friendly, like a close friend explaining who is in the picture.\n"
+        "- For the person labeled 'BHa', treat her as 'a friend of PTri' by default. "
+        "Do NOT mention that she was ever a crush unless the user explicitly asks about love, romance, or crushes.\n"
+        "- Answers should be short and natural (about 3–6 sentences in total), like a close friend explaining who is in the picture.\n"
         f"- {language_instruction}\n\n"
         f"Factual context from detectors and profiles:\n{factual_context}\n\n"
         f"Style examples (language: {lang_code}):\n{examples_text}\n"
     )
+
 
     messages = [
         {"role": "system", "content": system_prompt},
@@ -1125,45 +1202,114 @@ async def vision_qa(
 def general_chat(body: ChatRequest):
     """
     General knowledge chat with IreneAdler.
-    Uses style examples (static + dynamic, label=None) to keep a consistent tone.
+
+    - For normal questions: use world knowledge.
+    - For questions about people in PTri's database: ONLY use facts from IDENTITY_DB.
     """
     question = body.question
 
     lang_code = "vi" if looks_vietnamese(question) else "en"
+    wants_long = wants_detailed_answer(question)
+    wants_short = wants_brief_answer(question)
+
+    # --- Detect which people are mentioned in the question ---
+    people_keys = find_people_in_text(question)
+    people_context_parts: list[str] = []
+    for k in people_keys:
+        details = render_profile_details(k)
+        if details:
+            people_context_parts.append(details)
+    people_context = "\n\n".join(people_context_parts) if people_context_parts else ""
 
     static_ex = STYLE_EXAMPLES.get(lang_code, [])
     dynamic_ex = DYNAMIC_STYLE_EXAMPLES.get(lang_code, [])
-
     all_ex = static_ex + dynamic_ex
-    # Only general (label=None) examples; keep up to 4
     general_ex = [e for e in all_ex if e.get("label") is None][:4]
 
+    # --- Length rule for THIS question ---
+    if wants_long and not wants_short:
+        length_rule = (
+            "For THIS question the user is asking for a detailed answer "
+            "(for example they said 'kể tất cả', 'nói chi tiết'). "
+            "You may write several short paragraphs or a structured list, "
+            "covering all important points from the available information, "
+            "but still avoid repetition and filler.\n"
+        )
+    elif wants_short and not wants_long:
+        length_rule = (
+            "For THIS question the user explicitly wants a short answer. "
+            "Reply in at most 2–3 short sentences, very direct.\n"
+        )
+    else:
+        length_rule = (
+            "For THIS question, prefer a medium-length answer: about 3–6 sentences "
+            "or a short list, clear and friendly, not too short and not an essay.\n"
+        )
+
+    # --- Core behaviour rules ---
     system_prompt = (
         "You are an AI assistant named IreneAdler inside TriGPT.\n"
         "You answer general questions using your world knowledge.\n\n"
         "Language rules:\n"
-        "- If the user writes in Vietnamese, reply in natural, fluent Vietnamese.\n"
+        "- If the user writes in Vietnamese, reply in natural, fluent Vietnamese "
+        "(giọng gần gũi, không sáo rỗng, không 'dạy đời').\n"
         "- Otherwise, reply in the same language the user used.\n\n"
-        "Relationship rules (if the user asks about people in PTri's database):\n"
+        "Relationship rules (when the user asks about people in PTri's life):\n"
         "- Refer to them through PTri, e.g. 'PTri's friend', 'PTri's muse', not 'my friend'.\n"
-        "- For BHa, default to 'a friend of PTri'; mention past crush only when the user explicitly asks.\n\n"
+        "- For BHa or Hoài Thương, do NOT mention that they were old crushes "
+        "unless the user explicitly asks about crush or romance.\n\n"
+        "Hallucination rules for people in PTri's database:\n"
+        "- When describing a specific person from PTri's database "
+        "(PTri, PTri's Muse, Lanh, BHa, HThuong, XViet, KNguyen, BinhLe, etc.), "
+        "you MUST treat the profile section below as the ONLY source of truth "
+        "about that person.\n"
+        "- Do NOT invent any new biographical facts for them: "
+        "no new jobs, companies, universities, awards, charity activities, cities, "
+        "family background, or personal stories that are not explicitly listed "
+        "in the profile.\n"
+        "- If the user asks for more details than the profile contains, say "
+        "that you don't know more details, and you may repeat or reorganize the "
+        "existing information instead of inventing new things.\n\n"
         "Answering style:\n"
-        "- Be concrete and concise. Avoid long motivational speeches and vague filler.\n"
+        "- Be concrete and avoid vague motivational filler.\n"
         "- If something is outside your knowledge, say you don't know instead of guessing.\n\n"
-        "Below are a few example answers that show the tone you should follow. "
-        "Use them as a style reference only; do NOT copy any sentence word-for-word.\n\n"
+        "Answer length for THIS question:\n"
+        f"{length_rule}\n"
+        "Formulation rules:\n"
+        "- When the user asks 'X là ai?', answer starting with 'X là ...', "
+        "not 'Người này là ...'. Answer directly in the same perspective as the question.\n"
     )
 
+    # --- Add people profile context if we detected any ---
+    people_block = ""
+    if people_context:
+        people_block = (
+            "\nBelow is the FULL profile information from PTri's private database "
+            "for the people that appear in the question. "
+            "You MUST NOT add any new biographical facts beyond what is written here. "
+            "You may only rephrase, summarize, or combine these facts.\n\n"
+            f"{people_context}\n"
+        )
+
+    # --- Style examples (tone only) ---
     examples_block = ""
-    for ex in general_ex:
-        u = ex.get("user", "")
-        a = ex.get("assistant", "")
-        if not u or not a:
-            continue
-        examples_block += f"User: {u}\nAssistant: {a}\n\n"
+    if general_ex:
+        examples_block += (
+            "\nBelow are a few example answers that show the tone you should follow. "
+            "Use them as style reference only; do NOT copy any sentence word-for-word.\n\n"
+        )
+        for ex in general_ex:
+            u = ex.get("user", "")
+            a = ex.get("assistant", "")
+            if not u or not a:
+                continue
+            examples_block += f"User: {u}\nAssistant: {a}\n\n"
 
     messages = [
-        {"role": "system", "content": system_prompt + examples_block},
+        {
+            "role": "system",
+            "content": system_prompt + people_block + examples_block,
+        },
         {"role": "user", "content": question},
     ]
 
@@ -1173,6 +1319,7 @@ def general_chat(body: ChatRequest):
         raise HTTPException(status_code=500, detail=f"LLM error: {e}")
 
     return ChatResponse(answer=answer)
+
 
 
 @app.post("/live_emotion", response_model=EmotionPredictionResponse)
@@ -1243,55 +1390,12 @@ async def live_detect(file: UploadFile = File(...)):
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Error running object detector: {e}")
 
-    # Map model labels -> high-level categories
-    label_map = {
-        "person": "human",
-        "car": "car",
-        "truck": "car",
-        "bus": "car",
-        "motorcycle": "car",
-        "bicycle": "car",
-        "dog": "dog",
-        "cat": "cat",
-        "cell phone": "phone",
-        "mobile phone": "phone",
-        "potted plant": "tree",
-        "tree": "tree",
-    }
-
-    # --- small helper: IoU for duplicate-removal ---
-    def iou(a, b) -> float:
-        ax1 = a["x"]
-        ay1 = a["y"]
-        ax2 = a["x"] + a["w"]
-        ay2 = a["y"] + a["h"]
-
-        bx1 = b["x"]
-        by1 = b["y"]
-        bx2 = b["x"] + b["w"]
-        by2 = b["y"] + b["h"]
-
-        inter_x1 = max(ax1, bx1)
-        inter_y1 = max(ay1, by1)
-        inter_x2 = min(ax2, bx2)
-        inter_y2 = min(ay2, by2)
-
-        if inter_x2 <= inter_x1 or inter_y2 <= inter_y1:
-            return 0.0
-
-        inter = (inter_x2 - inter_x1) * (inter_y2 - inter_y1)
-        area_a = (ax2 - ax1) * (ay2 - ay1)
-        area_b = (bx2 - bx1) * (by2 - by1)
-        return inter / max(area_a + area_b - inter, 1e-6)
-
     # --- filter tiny boxes + NMS to prevent duplicates ---
     filtered: list[dict] = []
-    MIN_AREA_RATIO = 0.02  # ignore boxes < 2% of image area
-    MAX_IOU = 0.55         # if IoU > this with a kept box, treat as duplicate
 
     for d in dets:
         raw_label = d.get("label", "")
-        category = label_map.get(raw_label)
+        category = OBJECT_LABEL_MAP.get(raw_label)
         if category is None:
             continue
 
@@ -1301,21 +1405,20 @@ async def live_detect(file: UploadFile = File(...)):
         h = float(d.get("h", 0.0))
         score = float(d.get("score", 0.0))
 
-        # Filter clearly invalid or tiny boxes
         if w <= 0.0 or h <= 0.0:
             continue
+
         box_area = w * h * img_area
-        if box_area < MIN_AREA_RATIO * img_area:
+        if box_area < MIN_HUMAN_BOX_AREA_RATIO * img_area:
             continue
 
         candidate = {"label": raw_label, "score": score, "x": x, "y": y, "w": w, "h": h}
 
-        # NMS: drop if highly overlapping with a better one
         duplicate = False
         for kept in filtered:
             if kept["label"] != raw_label:
                 continue
-            if iou(candidate, kept) > MAX_IOU:
+            if compute_iou(candidate, kept) > MAX_HUMAN_IOU:
                 duplicate = True
                 break
         if not duplicate:
@@ -1331,7 +1434,7 @@ async def live_detect(file: UploadFile = File(...)):
         w_norm = float(d["w"])
         h_norm = float(d["h"])
 
-        category = label_map.get(raw_label)
+        category = OBJECT_LABEL_MAP.get(raw_label)
         if category is None:
             continue
 
@@ -1357,18 +1460,14 @@ async def live_detect(file: UploadFile = File(...)):
                     if success:
                         crop_bytes = buffer.tobytes()
                         try:
-                            identity_label, identity_conf = \
+                            raw_label_id, raw_conf_id = \
                                 face_classifier.predict_from_bytes(crop_bytes)
                         except Exception:
-                            identity_label, identity_conf = None, None
+                            raw_label_id, raw_conf_id = None, None
 
-                        # Low confidence → treat as strangers
-                        if (
-                            identity_conf is None
-                            or identity_conf < IDENTITY_CONF_THRESHOLD
-                            or identity_label is None
-                        ):
-                            identity_label = "strangers"
+                        identity_label, identity_conf = postprocess_identity_label(
+                            raw_label_id, raw_conf_id
+                        )
 
                         if identity_label is not None:
                             identity_info = IDENTITY_INFO.get(identity_label)
@@ -1390,6 +1489,7 @@ async def live_detect(file: UploadFile = File(...)):
 
     return DetectionResponse(detections=detections_out)
 
+
 @app.post("/face_feedback")
 async def face_feedback(
     label: str = Form(...),
@@ -1397,7 +1497,7 @@ async def face_feedback(
 ):
     """
     Save a corrected face image into the training folder so the model
-    can learn from mistakes later.
+    (now UniFace-based) can use it next time.
 
     Usage (multiple people in one photo):
     - On the frontend, crop each face separately (e.g. using the bbox from /live_detect).
@@ -1408,8 +1508,7 @@ async def face_feedback(
     Each call saves one image:
         data/faces/train/<label>/feedback_*.jpg
 
-    Then re-run: python -m src.train_face_model
-    to retrain with this extra feedback data.
+    Then restart the backend so the UniFace classifier rebuilds its face database.
     """
     if not is_image_upload(file):
         raise HTTPException(status_code=400, detail="Uploaded file is not an image")
@@ -1450,3 +1549,37 @@ async def face_feedback(
         "label": label,
         "path": str(save_path),
     }
+@app.post("/chat_feedback")
+def chat_feedback(body: ChatFeedbackRequest):
+    """
+    Save structured feedback about Irene's answers.
+
+    Frontend sends:
+    - question: last user message (string)
+    - answer: assistant message (string)
+    - rating: 1–5
+    - comment: optional text (can be None)
+    - mode: "doc" | "global" | "general" | "vision" | None
+    """
+    record = {
+        "timestamp": time.time(),
+        "question": body.question,
+        "answer": body.answer,
+        "rating": body.rating,
+        "comment": body.comment,
+        "mode": body.mode,
+    }
+
+    try:
+        FEEDBACK_FILE.parent.mkdir(parents=True, exist_ok=True)
+        with FEEDBACK_FILE.open("a", encoding="utf-8") as f:
+            f.write(json.dumps(record, ensure_ascii=False) + "\n")
+    except Exception as e:
+        # Cho frontend biết là lưu thất bại
+        raise HTTPException(
+            status_code=500,
+            detail=f"Could not save feedback: {e}",
+        )
+
+    return {"status": "ok"}
+

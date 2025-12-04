@@ -20,6 +20,7 @@ const IDENTITY_OPTIONS = [
   "BinhLe",
   "XViet",
   "KNguyen",
+  "PTrinh",
 ];
 
 function App() {
@@ -54,7 +55,7 @@ function App() {
   const [messageFeedback, setMessageFeedback] = useState({});
   const [sendingChatFeedback, setSendingChatFeedback] = useState(false);
 
-  // Camera for Vision
+  // Camera for Vision snapshot
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
   const [cameraActive, setCameraActive] = useState(false);
@@ -95,7 +96,7 @@ function App() {
     fetchData();
   }, []);
 
-  // Cleanup camera + preview URL on unmount
+  // Cleanup snapshot camera + preview URL on unmount
   useEffect(() => {
     return () => {
       stopCamera();
@@ -290,7 +291,7 @@ function App() {
     }
   }
 
-  // ---------- Vision: upload / camera ----------
+  // ---------- Vision: upload / camera (snapshot) ----------
 
   function handleVisionFileChange(e) {
     const file = e.target.files?.[0];
@@ -945,7 +946,7 @@ function App() {
         </header>
 
         <div className="chat-messages">
-          {/* Vision: upload + camera + feedback */}
+          {/* Vision: upload + camera + feedback + live cam */}
           {mode === MODES.VISION && (
             <div className="vision-panel">
               <div className="vision-row">
@@ -1010,6 +1011,16 @@ function App() {
                 </div>
               </div>
 
+              {/* Live Cam (continuous ID using /predict_face) */}
+              <div className="vision-row" style={{ marginTop: "1rem" }}>
+                <div className="vision-card">
+                  <div className="vision-card-title">
+                    Live camera (who is in front of me?)
+                  </div>
+                  <LiveCam />
+                </div>
+              </div>
+
               {visionPreviewUrl && (
                 <div className="vision-preview">
                   <div className="vision-card-title">
@@ -1064,8 +1075,7 @@ function App() {
                                   Model guess:{" "}
                                   <code>
                                     {d.identity || "unknown"} (
-                                    {typeof d.identity_confidence ===
-                                      "number"
+                                    {typeof d.identity_confidence === "number"
                                       ? d.identity_confidence.toFixed(2)
                                       : "?"}
                                     )
@@ -1215,6 +1225,9 @@ function MessageBubble({
   onCommentChange,
   onSubmitComment,
   sendingChatFeedback,
+  // optional for face-detection feedback in Vision mode
+  onVisionLike,
+  onVisionDislike,
 }) {
   const isUser = message.role === "user";
   const showFeedback = !isUser; // only on assistant messages
@@ -1224,6 +1237,18 @@ function MessageBubble({
   const submitted = feedback?.submitted;
   const error = feedback?.error;
   const comment = feedback?.comment || "";
+
+  // Collapse user newlines so user bubbles don't become super tall,
+  // but keep assistant newlines (for formatting).
+  const rawText = message.content || "";
+  const displayText = isUser ? rawText.replace(/\s*\n\s*/g, " ") : rawText;
+
+  // Heuristic: this message probably has a face-identity result
+  const isVisionIdentityMessage =
+    !isUser &&
+    mode === "vision" && // or use MODES.VISION if available in this file
+    typeof rawText === "string" &&
+    rawText.toLowerCase().includes("identity label:");
 
   return (
     <div
@@ -1239,18 +1264,21 @@ function MessageBubble({
           "message-bubble " +
           (isUser ? "message-bubble-user" : "message-bubble-assistant")
         }
-        // ⬇️ Thinner bubble: less padding + normal max width
-        style={{
-          padding: "0.1rem 0.6rem",
-          maxWidth: "70%",
-        }}
       >
-        {message.content.split("\n").map((line, i) => (
-          <p key={i}>{line}</p>
-        ))}
+        {/* Brand name: Irene (TriGPT) above assistant bubbles */}
+        {!isUser && (
+          <div className="assistant-name-inline">
+            <span className="assistant-name-main">Irene</span>{" "}
+            <span className="assistant-name-brand">(TriGPT)</span>
+          </div>
+        )}
+
+        {/* Main message text */}
+        <p>{displayText}</p>
 
         {showFeedback && (
           <div className="message-feedback">
+            {/* 1–5 star rating: answer quality */}
             {!submitted && !waitingForComment && !rating && (
               <div className="feedback-row">
                 <span className="tiny-text">Rate this answer:</span>
@@ -1271,6 +1299,7 @@ function MessageBubble({
               </div>
             )}
 
+            {/* If user gave 1–2★, ask for comment */}
             {waitingForComment && (
               <div className="feedback-comment-block">
                 <div className="tiny-text">
@@ -1307,6 +1336,7 @@ function MessageBubble({
               </div>
             )}
 
+            {/* Thanks text after feedback sent */}
             {submitted && (
               <div className="tiny-text feedback-thanks">
                 {rating >= 4
@@ -1322,6 +1352,36 @@ function MessageBubble({
                 {error}
               </div>
             )}
+
+            {/* 👍 / 👎 for face detection, only in Vision identity answers */}
+            {isVisionIdentityMessage && (
+              <div className="vision-like-row">
+                <span className="tiny-text" style={{ marginRight: "0.3rem" }}>
+                  Face detection:
+                </span>
+                <button
+                  type="button"
+                  className="thumb-btn"
+                  onClick={() =>
+                    onVisionLike && onVisionLike(mode, index, message)
+                  }
+                >
+                  👍
+                </button>
+                <button
+                  type="button"
+                  className="thumb-btn"
+                  onClick={() =>
+                    onVisionDislike && onVisionDislike(mode, index, message)
+                  }
+                >
+                  👎
+                </button>
+                <span className="tiny-text" style={{ marginLeft: "0.3rem" }}>
+                  correct / wrong
+                </span>
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -1329,5 +1389,236 @@ function MessageBubble({
   );
 }
 
+
+
+/**
+ * LiveCam component:
+ * - Shows webcam preview
+ * - Sends a SMALL frame every ~1.2s to /predict_face
+ * - Displays who Irene sees right now
+ */
+function LiveCam() {
+  const videoRef = useRef(null);
+  const canvasRef = useRef(null);
+
+  const [isCameraOn, setIsCameraOn] = useState(false);
+  const [isScanning, setIsScanning] = useState(false);
+  const [isBusy, setIsBusy] = useState(false);
+  const [result, setResult] = useState(null);
+  const [error, setError] = useState(null);
+
+  // Start live camera
+  const startLiveCamera = async () => {
+    setError(null);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: { ideal: 640 }, height: { ideal: 480 } },
+        audio: false,
+      });
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+        await videoRef.current.play();
+      }
+      setIsCameraOn(true);
+    } catch (err) {
+      console.error("Error starting live camera", err);
+      setError("Không mở được camera (check quyền truy cập).");
+    }
+  };
+
+  const stopLiveCamera = () => {
+    if (videoRef.current && videoRef.current.srcObject) {
+      const tracks = videoRef.current.srcObject.getTracks();
+      tracks.forEach((t) => t.stop());
+      videoRef.current.srcObject = null;
+    }
+    setIsCameraOn(false);
+    setIsScanning(false);
+  };
+
+  // Cleanup when unmount
+  useEffect(() => {
+    return () => {
+      stopLiveCamera();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const captureAndSend = async () => {
+    if (!videoRef.current || !canvasRef.current) return;
+    if (isBusy) return;
+
+    setIsBusy(true);
+    setError(null);
+
+    try {
+      const video = videoRef.current;
+      const canvas = canvasRef.current;
+
+      // Downscale frame to reduce lag
+      const targetWidth = 320;
+      const targetHeight = Math.round(
+        (video.videoHeight / video.videoWidth) * targetWidth || 240
+      );
+
+      canvas.width = targetWidth;
+      canvas.height = targetHeight;
+
+      const ctx = canvas.getContext("2d");
+      ctx.drawImage(video, 0, 0, targetWidth, targetHeight);
+
+      const blob = await new Promise((resolve) =>
+        canvas.toBlob((b) => resolve(b), "image/jpeg", 0.8)
+      );
+      if (!blob) {
+        throw new Error("Failed to capture frame");
+      }
+
+      const formData = new FormData();
+      formData.append("file", blob, "frame.jpg");
+
+      const res = await fetch(`${API_URL}/predict_face`, {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        throw new Error(`API error: ${res.status} ${text}`);
+      }
+
+      const data = await res.json();
+      setResult({
+        label: data.predicted_class,
+        confidence: data.confidence,
+        ts: new Date().toLocaleTimeString(),
+      });
+    } catch (err) {
+      console.error(err);
+      setError(err.message || "Lỗi khi gửi frame.");
+    } finally {
+      setIsBusy(false);
+    }
+  };
+
+  // Auto-scan loop (about every 1.2s)
+  useEffect(() => {
+    if (!isCameraOn || !isScanning) return;
+
+    let cancelled = false;
+
+    const tick = async () => {
+      if (cancelled) return;
+      await captureAndSend();
+      if (cancelled) return;
+      setTimeout(tick, 1200);
+    };
+
+    tick();
+
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isCameraOn, isScanning]);
+
+  const handleScanOnce = () => {
+    if (!isCameraOn || isBusy) return;
+    captureAndSend();
+  };
+
+  const toggleAutoScan = () => {
+    if (!isCameraOn) return;
+    setIsScanning((prev) => !prev);
+  };
+
+  return (
+    <div>
+      <video
+        ref={videoRef}
+        autoPlay
+        playsInline
+        muted
+        className={
+          "camera-video " + (isCameraOn ? "" : "camera-video-hidden")
+        }
+      />
+      <canvas ref={canvasRef} style={{ display: "none" }} />
+
+      <div className="camera-controls" style={{ marginTop: "0.5rem" }}>
+        {!isCameraOn ? (
+          <button
+            className="upload-btn"
+            type="button"
+            onClick={startLiveCamera}
+          >
+            🎥 Start live camera
+          </button>
+        ) : (
+          <>
+            <button
+              className="upload-btn"
+              type="button"
+              onClick={handleScanOnce}
+              disabled={isBusy}
+            >
+              📸 Scan once
+            </button>
+            <button
+              className={
+                "secondary-btn " + (isScanning ? "secondary-btn-active" : "")
+              }
+              type="button"
+              onClick={toggleAutoScan}
+            >
+              {isScanning ? "⏸ Pause auto-scan" : "▶ Auto-scan (slow)"}
+            </button>
+            <button
+              className="secondary-btn"
+              type="button"
+              onClick={stopLiveCamera}
+            >
+              🛑 Stop
+            </button>
+          </>
+        )}
+      </div>
+
+      <div className="hint-text small" style={{ marginTop: "0.5rem" }}>
+        {result ? (
+          <>
+            <div>
+              <strong>Who I see:</strong> {result.label}
+            </div>
+            <div>
+              <strong>Confidence:</strong>{" "}
+              {(result.confidence * 100).toFixed(1)}%
+            </div>
+            <div className="tiny-text">Last updated: {result.ts}</div>
+          </>
+        ) : (
+          <span>
+            Start camera, then use “Scan once” or “Auto-scan” to identify
+            who is in front of you.
+          </span>
+        )}
+      </div>
+
+      {isBusy && (
+        <div className="tiny-text" style={{ marginTop: "0.25rem" }}>
+          Đang xử lý frame...
+        </div>
+      )}
+      {error && (
+        <div
+          className="tiny-text"
+          style={{ marginTop: "0.25rem", color: "#f87171" }}
+        >
+          Lỗi: {error}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default App;

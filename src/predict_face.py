@@ -3,11 +3,13 @@
 from pathlib import Path
 import argparse
 
-from .vision_model import FaceClassifier
+from .uniface_face_classifier import FaceClassifier
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Predict 'me' vs 'other' from an image.")
+    parser = argparse.ArgumentParser(
+        description="Predict identity (PTri / Lanh / MTuan / BHa / PTri's Muse / strangers / ...) from an image."
+    )
     parser.add_argument("image_path", type=str, help="Path to the image file")
     args = parser.parse_args()
 
@@ -15,6 +17,7 @@ def main():
     if not image_path.exists():
         raise SystemExit(f"Image file not found: {image_path}")
 
+    # checkpoint_path is kept for API compatibility but ignored by UniFace backend
     classifier = FaceClassifier(checkpoint_path="models/face_classifier.pt")
 
     class_name, confidence = classifier.predict_from_path(image_path)
